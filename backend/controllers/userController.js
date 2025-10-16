@@ -1,0 +1,5 @@
+const User = require('../models/userModel');
+exports.getAllUsers = async (req,res,next)=>{ try{ const q=req.query.q||''; const users = await User.find(q?{ $or:[{firstName:new RegExp(q,'i')},{lastName:new RegExp(q,'i')},{email:new RegExp(q,'i')}] }:{}).select('-passwordHash'); res.json(users);}catch(e){next(e)} };
+exports.getUser = async (req,res,next)=>{ try{ const id = req.params.id; if(req.user.role==='customer' && req.user._id.toString()!==id) return res.status(403).end(); const u = await User.findById(id).select('-passwordHash'); res.json(u);}catch(e){next(e)} };
+exports.updateUser = async (req,res,next)=>{ try{ const id = req.params.id; if(req.user.role==='customer' && req.user._id.toString()!==id) return res.status(403).end(); const updates = req.body; if(updates.role && req.user.role!=='superadmin') delete updates.role; const u = await User.findByIdAndUpdate(id, updates, { new: true }).select('-passwordHash'); res.json(u);}catch(e){next(e)} };
+exports.deleteUser = async (req,res,next)=>{ try{ if(req.user.role!=='superadmin') return res.status(403).end(); await User.findByIdAndDelete(req.params.id); res.json({message:'deleted'});}catch(e){next(e)} };

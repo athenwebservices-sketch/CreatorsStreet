@@ -1,0 +1,6 @@
+const Payment = require('../models/paymentModel');
+exports.createPayment = async (req,res,next)=>{ try{ const p = await Payment.create({ user: req.user._id, ...req.body, createdAt: new Date() }); res.status(201).json(p);}catch(e){next(e)} };
+exports.list = async (req,res,next)=>{ try{ if(req.user.role==='customer'){ const items = await Payment.find({ user: req.user._id }); res.json(items);} else { const items = await Payment.find().populate('user','firstName lastName email'); res.json(items);} }catch(e){next(e)} };
+exports.get = async (req,res,next)=>{ try{ const p = await Payment.findById(req.params.id); if(!p) return res.status(404).end(); if(req.user.role==='customer' && p.user.toString()!==req.user._id.toString()) return res.status(403).end(); res.json(p);}catch(e){next(e)} };
+exports.update = async (req,res,next)=>{ try{ if(req.user.role==='customer') return res.status(403).end(); const p = await Payment.findByIdAndUpdate(req.params.id, req.body, { new: true }); res.json(p);}catch(e){next(e)} };
+exports.delete = async (req,res,next)=>{ try{ if(req.user.role!=='superadmin') return res.status(403).end(); await Payment.findByIdAndDelete(req.params.id); res.json({message:'deleted'});}catch(e){next(e)} };

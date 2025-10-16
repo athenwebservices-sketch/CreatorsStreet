@@ -1,0 +1,10 @@
+const express=require('express'); const router=express.Router();
+const { requireApiKey, protect } = require('../middleware/authMiddleware');
+const ctrl = require('../controllers/cartController');
+router.get('/', requireApiKey, protect, ctrl.getCart);
+router.post('/items', requireApiKey, protect, ctrl.addItem);
+router.put('/items/:itemId', requireApiKey, protect, ctrl.updateItem);
+router.delete('/items/:itemId', requireApiKey, protect, ctrl.removeItem);
+router.post('/merge', requireApiKey, protect, ctrl.merge);
+router.delete('/', requireApiKey, protect, ctrl.clear);
+module.exports = router;

@@ -1,0 +1,10 @@
+const express=require('express'); const router=express.Router();
+const { requireApiKey, protect, authorizeRoles } = require('../middleware/authMiddleware');
+const ctrl = require('../controllers/categoryController');
+router.post('/', requireApiKey, protect, authorizeRoles('admin','superadmin'), ctrl.create);
+router.get('/', requireApiKey, ctrl.list);
+router.get('/:id', requireApiKey, ctrl.get);
+router.put('/:id', requireApiKey, protect, authorizeRoles('admin','superadmin'), ctrl.update);
+router.delete('/:id', requireApiKey, protect, authorizeRoles('superadmin'), ctrl.delete);
+router.get('/:id/products', requireApiKey, ctrl.products);
+module.exports = router;

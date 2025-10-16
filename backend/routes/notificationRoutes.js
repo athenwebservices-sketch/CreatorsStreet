@@ -1,0 +1,15 @@
+const express=require('express'); const router=express.Router();
+const { requireApiKey, protect, authorizeRoles } = require('../middleware/authMiddleware');
+const ctrl = require('../controllers/notificationController');
+router.get('/', requireApiKey, protect, ctrl.listForUser);
+router.put('/:id/read', requireApiKey, protect, ctrl.markRead);
+router.put('/read-all', requireApiKey, protect, ctrl.markAllRead);
+router.delete('/:id', requireApiKey, protect, ctrl.delete);
+router.get('/preferences', requireApiKey, protect, ctrl.getPreferences);
+router.put('/preferences', requireApiKey, protect, ctrl.updatePreferences);
+router.get('/admin/templates', requireApiKey, protect, authorizeRoles('admin','superadmin'), ctrl.listTemplates);
+router.post('/admin/templates', requireApiKey, protect, authorizeRoles('admin','superadmin'), ctrl.createTemplate);
+router.get('/admin/templates/:id', requireApiKey, protect, authorizeRoles('admin','superadmin'), ctrl.getTemplate);
+router.put('/admin/templates/:id', requireApiKey, protect, authorizeRoles('admin','superadmin'), ctrl.updateTemplate);
+router.delete('/admin/templates/:id', requireApiKey, protect, authorizeRoles('superadmin'), ctrl.deleteTemplate);
+module.exports = router;

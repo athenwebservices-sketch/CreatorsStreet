@@ -1,0 +1,5 @@
+const PasswordReset = require('../models/passwordResetModel');
+const User = require('../models/userModel');
+const crypto = require('crypto');
+exports.forgot = async (req,res,next)=>{ try{ const { email } = req.body; const user = await User.findOne({ email }); if(!user) return res.status(200).json({message:'If account exists, reset email sent.'}); const token = crypto.randomBytes(20).toString('hex'); await PasswordReset.create({ userId: user._id, token, expiresAt: new Date(Date.now()+3600*1000) }); console.log('Password reset token for', email, token); res.json({message:'Password reset token generated (console)'});}catch(e){next(e)} };
+exports.reset = async (req,res,next)=>{ try{ const { token, password } = req.body; const pr = await PasswordReset.findOne({ token }); if(!pr || pr.expiresAt < new Date()) return res.status(400).json({message:'Invalid or expired token'}); const user = await User.findById(pr.userId); await user.setPassword(password); await user.save(); await pr.deleteOne(); res.json({message:'Password reset successful'});}catch(e){next(e)} };

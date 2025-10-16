@@ -1,0 +1,10 @@
+const express = require('express'); const router = express.Router();
+const { requireApiKey, protect, authorizeRoles } = require('../middleware/authMiddleware');
+const UserController = require('../controllers/userController');
+router.get('/me', requireApiKey, protect, async (req,res)=>{ res.json(req.user); });
+router.put('/me', requireApiKey, protect, async (req,res,next)=>{ try{ const updates = req.body; const u = await require('../models/userModel').findByIdAndUpdate(req.user._id, updates, { new: true }); res.json(u);}catch(e){next(e)} });
+router.get('/', requireApiKey, protect, authorizeRoles('admin','superadmin'), UserController.getAllUsers);
+router.get('/:id', requireApiKey, protect, UserController.getUser);
+router.put('/:id', requireApiKey, protect, UserController.updateUser);
+router.delete('/:id', requireApiKey, protect, UserController.deleteUser);
+module.exports = router;

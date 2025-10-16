@@ -1,0 +1,16 @@
+const express=require('express'); const router=express.Router();
+const { requireApiKey, protect } = require('../middleware/authMiddleware');
+const ctrl = require('../controllers/orderController');
+router.post('/', requireApiKey, protect, ctrl.createOrder);
+router.get('/', requireApiKey, protect, ctrl.list);
+router.get('/:id', requireApiKey, protect, ctrl.get);
+router.put('/:id/cancel', requireApiKey, protect, ctrl.cancel);
+router.put('/:id/status', requireApiKey, protect, ctrl.updateStatus);
+router.post('/:id/shipments', requireApiKey, protect, ctrl.createShipment);
+router.put('/:id/shipments/:shipmentId', requireApiKey, protect, ctrl.updateShipment);
+router.post('/:id/returns', requireApiKey, protect, ctrl.createReturn);
+router.get('/:id/returns', requireApiKey, protect, ctrl.listReturns);
+router.put('/:id/returns/:returnId/approve', requireApiKey, protect, ctrl.approveReturn);
+router.put('/:id/returns/:returnId/reject', requireApiKey, protect, ctrl.rejectReturn);
+router.put('/:id/returns/:returnId/mark-received', requireApiKey, protect, ctrl.markReceived);
+module.exports = router;

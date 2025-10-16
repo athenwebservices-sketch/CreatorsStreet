@@ -1,0 +1,93 @@
+backend/
+├── config/                 # Configuration files (e.g., database connection, JWT secrets)
+│   ├── db.js              # MongoDB connection logic
+│   ├── jwtConfig.js       # JWT secret and config (e.g., expiration)
+├── controllers/            # Route handlers (business logic)
+│   ├── authController.js  # Handles login, registration, token refresh
+│   ├── movieController.js # Handles movie-related logic
+│   └── uploadController.js # Handles file upload logic
+├── middleware/             # Custom middleware (e.g., authentication checks)
+│   ├── authMiddleware.js  # Verifies JWT tokens for protected routes
+│   └── errorMiddleware.js # Handles errors globally
+├── models/                 # MongoDB models / schemas
+│   └── userModel.js       # User schema (for authentication, etc.)
+├── routes/                 # Express route definitions
+│   ├── authRoutes.js      # Auth routes (login, refresh token, etc.)
+│   ├── movieRoutes.js     # Movie-related routes
+│   └── uploadRoutes.js    # File upload routes
+├── services/               # Business logic (e.g., interacting with DB)
+│   └── userService.js     # Logic for user registration/login
+├── utils/                  # Utility functions and helpers
+│   ├── jwtUtils.js        # JWT generation and validation logic
+│   └── fileUtils.js       # File handling utilities (e.g., multer configuration)
+├── uploads/                # Folder to store uploaded files
+├── .env                    # Environment variables (e.g., database URI, JWT secret)
+├── server.js               # Entry point for the Express app
+└── package.json            # Project dependencies and scripts
+
+
+Uses MongoDB (Mongoose), JWT (1h expiry), bcrypt for passwords, and Multer for uploads.
+
+OTP flow:
+
+POST /api/auth/register — body: { name, email, password }
+
+Creates user with isVerified=false, generates an OTP (6 digits), prints it to server console (valid 10 minutes).
+
+POST /api/auth/verify-otp — body: { email, otp }
+
+Validates OTP, marks user verified, returns JWT.
+
+POST /api/auth/login — body: { email, password } — requires verified account; returns JWT.
+
+Uploads:
+
+POST /api/uploads — protected (Bearer token) — multipart/form-data with field file. Returns { fileUrl }. Files are stored in /uploads and served statically at /uploads/<filename>.
+
+Use the returned fileUrl in product imageUrls.
+
+Products (CRUD):
+
+GET /api/products — list all
+
+POST /api/products — create (protected) — body: { name, description, price, imageUrls: [] }
+
+GET /api/products/:id
+
+PUT /api/products/:id — protected
+
+DELETE /api/products/:id — protected
+
+Orders:
+
+POST /api/orders — create order (protected) — body: { items: [{ product: productId, quantity }] }
+
+Calculates total from product price at purchase.
+
+GET /api/orders — get orders for logged-in user
+
+GET /api/orders/:id
+
+PUT /api/orders/:id/status — update status (protected)
+
+Start-up:
+
+Unzip and cd into folder.
+
+npm install
+
+Ensure MongoDB is running and .env values match.
+
+npm run dev (if nodemon) or npm start
+
+Watch console for the OTP printed at registration.
+
+If you want:
+
+I can add role-based access (admin/cashier/viewer) — I noticed you used roles earlier; I didn't add them yet to keep the example focused.
+
+Add Swagger/OpenAPI docs, tests, or Dockerfile.
+
+Wire uploads to cloud storage (S3) instead of local storage.
+
+Which of those would you like next?
