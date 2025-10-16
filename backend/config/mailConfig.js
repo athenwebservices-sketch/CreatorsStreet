@@ -13,8 +13,8 @@ const transporter = nodemailer.createTransport({
 const sendMail = async ({ to, subject, text, html }) => {
   try {
     if(process.env.EMAIL_SWITCH=="YES"){
-        console.log("hi")
-    console.log(process.env.SMTP_PASS)
+        //console.log("hi")
+    //console.log(process.env.SMTP_PASS)
     const info = await transporter.sendMail({
       from: `"No Reply" <${process.env.SMTP_USER}>`,
       to,

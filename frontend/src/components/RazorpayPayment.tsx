@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { apiService } from '@/lib/api';
 
@@ -86,7 +84,7 @@ const RazorpayPayment = ({ product, onSuccess, onFailure, onDismiss }: RazorpayP
           },
           handler: async function (response: any) {
             console.log('Payment successful:', response);
-            let postPaymentError = null;
+            let postPaymentError: Error | null = null; // Adjusted type
 
             try {
               // 2. Update the order status to 'paid'
@@ -105,7 +103,7 @@ const RazorpayPayment = ({ product, onSuccess, onFailure, onDismiss }: RazorpayP
               console.log('Payment record created successfully.');
             } catch (error) {
               console.error('Error during post-payment processing:', error);
-              postPaymentError = error;
+              postPaymentError = error instanceof Error ? error : new Error('An unknown error occurred');
             }
 
             // Call onSuccess with all relevant data
@@ -130,9 +128,10 @@ const RazorpayPayment = ({ product, onSuccess, onFailure, onDismiss }: RazorpayP
         const rzp1 = new window.Razorpay(options);
         rzp1.open();
 
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Payment initiation error:', error);
-        onFailure(error.message || 'Error initiating Razorpay payment');
+        const errorMessage = error instanceof Error ? error.message : 'Error initiating Razorpay payment';
+        onFailure(errorMessage);
         // Reset processing state on failure so the user can try again
         setIsProcessing(false);
       }

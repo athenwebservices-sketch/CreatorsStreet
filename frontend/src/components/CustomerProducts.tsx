@@ -63,7 +63,8 @@ const CustomerProducts = () => {
         url += `&search=${searchTerm}`;
       }
       
-      const response = await apiService.get(url, token ? { Authorization: `Bearer ${token}` } : {});
+      const response = await apiService.get(`${url}&Authorization=Bearer ${token}`);
+
       
       // Handle different response formats
       const productsData = response.products || response.data || response;
@@ -175,35 +176,35 @@ const CustomerProducts = () => {
   };
 
   // Generate page numbers for pagination
-  const pageNumbers = useMemo(() => {
-    const totalPages = Math.ceil(pagination.total / pagination.limit);
-    const currentPage = pagination.page;
-    const maxVisiblePages = 5;
-    
-    if (totalPages <= maxVisiblePages) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
-    
-    const pages = [];
-    const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    if (startPage > 1) {
-      pages.push(1);
-      if (startPage > 2) pages.push('...');
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) pages.push('...');
-      pages.push(totalPages);
-    }
-    
-    return pages;
-  }, [pagination.page, pagination.total, pagination.limit]);
+  const pageNumbers: (string | number)[] = useMemo(() => {
+  const totalPages = Math.ceil(pagination.total / pagination.limit);
+  const currentPage = pagination.page;
+  const maxVisiblePages = 5;
+  
+  if (totalPages <= maxVisiblePages) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+  
+  const pages: (string | number)[] = []; // Explicitly define the type here
+  const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  
+  if (startPage > 1) {
+    pages.push(1);
+    if (startPage > 2) pages.push('...');
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+  
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) pages.push('...');
+    pages.push(totalPages);
+  }
+  
+  return pages;
+}, [pagination.page, pagination.total, pagination.limit]);
 
   if (loading) {
     return (
