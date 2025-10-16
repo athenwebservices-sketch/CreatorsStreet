@@ -5,8 +5,8 @@ import { Server } from 'socket.io';
 import next from 'next';
 
 const dev = process.env.NODE_ENV !== 'production';
-const currentPort = 5000; // Change port to 5000
-const hostname = 'srv1026508.hstgr.cloud'; // Change hostname to srv1026508.hstgr.cloud
+const currentPort = 3000;
+const hostname = '0.0.0.0';
 
 // Custom server with Socket.IO integration
 async function createCustomServer() {
@@ -15,6 +15,7 @@ async function createCustomServer() {
     const nextApp = next({ 
       dev,
       dir: process.cwd(),
+      // In production, use the current directory where .next is located
       conf: dev ? undefined : { distDir: './.next' }
     });
 
