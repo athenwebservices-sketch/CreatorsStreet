@@ -114,7 +114,7 @@ exports.login = async (req, res, next) => {
 
     // Check if the user's email is verified
     if (!user.isEmailVerified) {
-      return res.status(400).json({ message: 'User not verified. Please check your email for OTP.' });
+      return res.status(400).json({ message: 'User not verified. Please check your email for OTP.Pleas register again' });
     }
 
     const isMatch = await user.matchPassword(password);

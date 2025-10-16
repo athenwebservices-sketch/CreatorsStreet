@@ -83,7 +83,7 @@ const Login = () => {
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                placeholder="•••••••••"
+                placeholder="••••••••••"
               />
             </div>
             
@@ -101,9 +101,9 @@ const Login = () => {
               </div>
               
               <div className="text-sm">
-                <a href="#" className="text-yellow-400 hover:text-yellow-300">
+                <Link href="/reset-password" className="text-yellow-400 hover:text-yellow-300">
                   Forgot your password?
-                </a>
+                </Link>
               </div>
             </div>
             
