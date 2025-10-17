@@ -5,8 +5,6 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import RazorpayPayment from './RazorpayPayment';
 import QRCode from 'qrcode';
-import { useAuth } from '@/context/AuthContext';
-import { apiService } from '@/lib/api'; // Import the apiService
 
 interface Product {
   _id: string;
@@ -24,7 +22,6 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const { user } = useAuth();
   const [showPayment, setShowPayment] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -38,7 +35,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [orderId, setOrderId] = useState<string>('');
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [postPaymentError, setPostPaymentError] = useState<string | null>(null);
-  const [emailSent, setEmailSent] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Show notification helper
@@ -51,56 +47,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
     setTimeout(() => {
       setShowNotification(false);
     }, 5000);
-  };
-
-  // Function to send QR code via email - completely independent
-  const sendQREmail = (qrDataUrl: string, orderId: string) => {
-    // Check if user email is available
-    if (!user?.email) {
-      console.error('User email not available');
-      return;
-    }
-
-    // Create HTML content for the email with QR code embedded
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #3c0052;">Payment Confirmation</h2>
-        <p>Thank you for your purchase of <strong>${product.name}</strong>.</p>
-        <p>Your payment has been successfully processed. Please find your order details below:</p>
-        
-        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">Order Details</h3>
-          <p><strong>Order ID:</strong> ${orderId}</p>
-          <p><strong>Product:</strong> ${product.name}</p>
-          <p><strong>Amount Paid:</strong> ₹${product.price.toLocaleString()}</p>
-          <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-        </div>
-        
-        <div style="text-align: center; margin: 20px 0;">
-          <h3>Your Order QR Code</h3>
-          <p>Please save this QR code for your records. You may need to show it when collecting your order.</p>
-          <img src="${qrDataUrl}" alt="Order QR Code" style="max-width: 200px; margin: 10px auto; display: block;" />
-        </div>
-        
-        <p style="font-size: 12px; color: #666; margin-top: 30px;">
-          This is an automated message. Please do not reply to this email.
-        </p>
-      </div>
-    `;
-
-    // Send email asynchronously without awaiting
-    apiService.post('/api/email', {
-      to: user.email,
-      subject: `Order Confirmation - ${orderId}`,
-      html: emailHtml,
-    }).then(() => {
-      console.log('QR code email sent successfully');
-      // Update state to show success message
-      setEmailSent(true);
-    }).catch((error) => {
-      console.error('Error sending QR code email:', error);
-      // Silently fail - don't show error to user as it's a background operation
-    });
   };
 
   // Generate QR code when order ID changes
@@ -121,8 +67,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
           const dataUrl = canvasRef.current?.toDataURL('image/png');
           if (dataUrl) {
             setQrDataUrl(dataUrl);
-            // Send QR code to user's email - fire and forget
-            sendQREmail(dataUrl, orderId);
           }
         }
       });
@@ -134,9 +78,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
     setPaymentSuccess(true);
     setIsProcessing(false);
     setShowPayment(false);
-    
-    // Reset email sent state for new order
-    setEmailSent(false);
     
     // Set order ID and show QR modal
     setOrderId(response.orderId);
@@ -218,6 +159,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </div>
           )}
           
+          {/* Stock Badge */}
+          {/* <div className="absolute top-2 right-2">
+            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+              product.stock > 0 
+                ? 'bg-green-500/80 text-white' 
+                : 'bg-red-500/80 text-white'
+            }`}>
+              {product.stock > 0 ? `${product.stock} in stock` : 'Out of Stock'}
+            </span>
+          </div> */}
+
           {/* Category Badge */}
           {product.category && (
             <div className="absolute top-2 left-2">
@@ -326,20 +278,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <div className="text-center mb-4">
               <p className="text-green-600 font-medium mb-2">Your payment has been processed successfully.</p>
               <p className="text-gray-600 text-sm mb-4">Please save this QR code for your records.</p>
-              
-              {/* Dynamic message based on email status */}
-              {emailSent ? (
-                <div className="bg-green-100 text-green-700 px-3 py-2 rounded-md inline-block mb-2">
-                  <p className="text-sm flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    QR code has been sent to your email
-                  </p>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-xs mb-2">A copy of this QR code will be sent to your email shortly.</p>
-              )}
             </div>
             
             <div className="flex flex-col items-center">
