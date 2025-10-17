@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import axios from 'axios'; // Added this import
+import axios from 'axios';
 import AdminOrders from './AdminOrders';
 import AdminProducts from './AdminProducts';
 import AdminUsers from './AdminUsers';
@@ -21,6 +21,7 @@ const AdminDashboard = () => {
     totalProducts: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [ordersData, setOrdersData] = useState<any>(null); // Store orders data
 
   useEffect(() => {
     // Check if user is admin
@@ -32,43 +33,52 @@ const AdminDashboard = () => {
     // Check if token exists
     if (!token) return;
     setLoading(true);
-    console.log(token)
+    
     // Fetch all data in parallel for performance
     const fetchStats = async () => {
       try {
         const [productsRes, usersRes, ordersRes] = await Promise.all([
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/products`, { headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',Authorization: `Bearer ${token}` } }),
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, { headers: {'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '', Authorization: `Bearer ${token}` } }),
-          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, { headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',Authorization: `Bearer ${token}` } }),
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/products`, { 
+            headers: { 
+              'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
+              Authorization: `Bearer ${token}` 
+            } 
+          }),
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, { 
+            headers: {
+              'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '', 
+              Authorization: `Bearer ${token}` 
+            } 
+          }),
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, { 
+            headers: { 
+              'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
+              Authorization: `Bearer ${token}` 
+            } 
+          }),
         ]);
-
+        
+        // Store orders data for potential use
+        setOrdersData(ordersRes.data);
+        
         // Extract arrays safely
         const products = productsRes.data?.products || productsRes.data || [];
         const users = usersRes.data?.users || usersRes.data || [];
         const orders = ordersRes.data?.orders || ordersRes.data || [];
-         const totalOrders = ordersRes.data?.total || 0;
-
-console.log('Total Orders:', totalOrders);
+        
+        // Get total orders from the response
+        const totalOrders = ordersRes.data?.total || orders.length || 0;
+        
         // Calculate total revenue from orders
         const totalRevenue = Array.isArray(orders)
           ? orders.reduce((sum, order) => {
-              const total =
-                Number(order.totalAmount) ||
-                Number(order.total) ||
-                0;
+              const total = Number(order.totalAmount) || 0;
               return sum + total;
             }, 0)
           : 0;
 
-        // // Get 5 most recent orders
-        // const recent = Array.isArray(orders)
-        //   ? orders
-        //       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        //       .slice(0, 5)
-        //   : [];
-
         setStats({
-          totalOrders: totalOrders,
+          totalOrders,
           totalRevenue,
           totalUsers: users.length,
           totalProducts: products.length,
@@ -99,7 +109,7 @@ console.log('Total Orders:', totalOrders);
   const renderContent = () => {
     switch (activeTab) {
       case 'orders':
-        return <AdminOrders />;
+        return <AdminOrders ordersData={ordersData} />;
       case 'products':
         return <AdminProducts />;
       case 'users':
@@ -114,18 +124,18 @@ console.log('Total Orders:', totalOrders);
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center">
                 <div className="text-4xl mb-2">📦</div>
                 <div className="text-3xl font-bold text-white mb-1">{stats.totalOrders}</div>
                 <div className="text-gray-300">Total Orders</div>
               </div>
               
-               {/* <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center">
+              <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center">
                 <div className="text-4xl mb-2">💰</div>
-                <div className="text-3xl font-bold text-white mb-1">{stats.totalRevenue.toLocaleString()}</div>
+                <div className="text-3xl font-bold text-white mb-1">${stats.totalRevenue.toLocaleString()}</div>
                 <div className="text-gray-300">Total Revenue</div>
-              </div> */}
+              </div>
               
               <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center">
                 <div className="text-4xl mb-2">👥</div>
@@ -137,6 +147,60 @@ console.log('Total Orders:', totalOrders);
                 <div className="text-4xl mb-2">🛍️</div>
                 <div className="text-3xl font-bold text-white mb-1">{stats.totalProducts}</div>
                 <div className="text-gray-300">Total Products</div>
+              </div>
+            </div>
+
+            {/* Recent Orders Table */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4">Recent Orders</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-white">
+                  <thead>
+                    <tr className="border-b border-white/20">
+                      <th className="text-left py-3 px-4">Order Number</th>
+                      <th className="text-left py-3 px-4">Customer</th>
+                      <th className="text-left py-3 px-4">Status</th>
+                      <th className="text-left py-3 px-4">Payment Status</th>
+                      <th className="text-left py-3 px-4">Total</th>
+                      <th className="text-left py-3 px-4">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ordersData?.orders?.slice(0, 5).map((order: any) => (
+                      <tr key={order._id} className="border-b border-white/10 hover:bg-white/5">
+                        <td className="py-3 px-4">{order.orderNumber}</td>
+                        <td className="py-3 px-4">
+                          {order.userId?.firstName && order.userId?.lastName 
+                            ? `${order.userId.firstName} ${order.userId.lastName}`
+                            : order.userId?.email || 'Unknown'
+                          }
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            order.status === 'paid' 
+                              ? 'bg-green-500/20 text-green-300' 
+                              : 'bg-yellow-500/20 text-yellow-300'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            order.paymentStatus === 'paid' 
+                              ? 'bg-green-500/20 text-green-300' 
+                              : 'bg-yellow-500/20 text-yellow-300'
+                          }`}>
+                            {order.paymentStatus}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">${order.totalAmount}</td>
+                        <td className="py-3 px-4">
+                          {new Date(order.orderDate).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
