@@ -155,7 +155,7 @@ const Navbar = ({ isHovering, setIsHovering }) => {
                       >
                         Dashboard
                       </Link>
-                      <Link
+                      {/* <Link
                         href="/customer-dashboard/products"
                         className="block px-4 py-2 text-white hover:bg-white/10 transition-colors"
                       >
@@ -166,7 +166,7 @@ const Navbar = ({ isHovering, setIsHovering }) => {
                         className="block px-4 py-2 text-white hover:bg-white/10 transition-colors"
                       >
                         My Orders
-                      </Link>
+                      </Link> */}
                       <div className="border-t border-white/10"></div>
                       <button
                         onClick={handleLogout}
