@@ -3,19 +3,50 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { useAuth } from '@/context/AuthContext';
+
+// Define a type for orders
+interface Order {
+  _id?: string;
+  id?: string;
+  orderNumber?: string;
+  orderDate?: string;
+  createdAt?: string;
+  date?: string;
+  totalAmount?: number;
+  total?: number;
+  status?: string;
+  paymentStatus?: string;
+  userId?: string;
+  user?: {
+    id?: string;
+    _id?: string;
+  };
+  customerId?: string;
+}
 
 const AdminQRReader = () => {
+  const { token } = useAuth();
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanHistory, setScanHistory] = useState<Array<{ value: string; timestamp: Date }>>([]);
   const [error, setError] = useState<string | null>(null);
   const [cameraPermission, setCameraPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
   const [isInitialized, setIsInitialized] = useState(false);
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  const [orderDetails, setOrderDetails] = useState<Order | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const readerElementRef = useRef<HTMLDivElement>(null);
 
   // Initialize scanner when component mounts
   useEffect(() => {
+    setIsMounted(true);
+    
     // Check camera permissions on mount
     const checkCameraPermission = async () => {
       if (navigator.permissions && navigator.permissions.query) {
@@ -42,10 +73,81 @@ const AdminQRReader = () => {
     };
   }, []);
 
+  // Fetch order status when scan result changes
+  useEffect(() => {
+    if (scanResult && isMounted && token) {
+      fetchOrderStatus(scanResult);
+    }
+  }, [scanResult, isMounted, token]);
+
+  const fetchOrderStatus = async (id: string) => {
+    if (!token) return;
+    
+    try {
+      setIsLoadingStatus(true);
+      setError(null);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${id}`, {
+        headers: { 
+          'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
+          Authorization: `Bearer ${token}` 
+        }
+      });
+
+      if (response.ok) {
+       const orderData = await response.json();
+      setOrderDetails(orderData);
+      setOrderStatus(orderData.status);
+      }
+
+     
+    } catch (err) {
+      console.error('Error fetching order status:', err);
+      setOrderStatus('Error fetching status');
+      setError('Failed to fetch order status. Please try again.');
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  };
+
+  const updateOrderStatus = async () => {
+    if (!scanResult || !token) return;
+    
+    try {
+      setIsUpdatingStatus(true);
+      setError(null);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${scanResult}/status`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ status: 'Already Scanned' })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update order status');
+      }
+
+      const updatedOrder = await response.json();
+      setOrderDetails(updatedOrder);
+      setOrderStatus(updatedOrder.status);
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      setError('Failed to update order status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const startScanning = useCallback(async () => {
     try {
       setError(null);
       setScanResult(null);
+      setOrderStatus(null);
+      setOrderDetails(null);
       
       // Set scanning state to true first to ensure the element is rendered
       setIsScanning(true);
@@ -62,16 +164,26 @@ const AdminQRReader = () => {
         return;
       }
 
-      // Create new scanner instance
-      const html5QrCode = new Html5Qrcode('qr-reader');
-      scannerRef.current = html5QrCode;
-
       // Get available cameras
-      const cameras = await Html5Qrcode.getCameras();
+      const availableCameras = await Html5Qrcode.getCameras();
+      setCameras(availableCameras || []);
       
-      if (cameras && cameras.length > 0) {
-        // Use the first camera (usually back camera on mobile)
-        const cameraId = cameras[0].id;
+      if (availableCameras && availableCameras.length > 0) {
+        // Try to find the back camera first
+        let cameraId = availableCameras[0].id;
+        const backCamera = availableCameras.find(camera => 
+          camera.label.toLowerCase().includes('back')
+        );
+        
+        if (backCamera) {
+          cameraId = backCamera.id;
+        }
+        
+        setSelectedCameraId(cameraId);
+        
+        // Create new scanner instance
+        const html5QrCode = new Html5Qrcode('qr-reader');
+        scannerRef.current = html5QrCode;
         
         await html5QrCode.start(
           cameraId,
@@ -117,6 +229,49 @@ const AdminQRReader = () => {
     }
   }, []);
 
+  const switchCamera = useCallback(async () => {
+    if (!scannerRef.current || !scannerRef.current.isScanning || cameras.length <= 1) {
+      return;
+    }
+    
+    try {
+      // Stop the current scanning
+      await scannerRef.current.stop();
+      
+      // Find the next camera in the list
+      const currentIndex = cameras.findIndex(camera => camera.id === selectedCameraId);
+      const nextIndex = (currentIndex + 1) % cameras.length;
+      const nextCameraId = cameras[nextIndex].id;
+      
+      setSelectedCameraId(nextCameraId);
+      
+      // Start scanning with the new camera
+      await scannerRef.current.start(
+        nextCameraId,
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
+        },
+        (decodedText) => {
+          setScanResult(decodedText);
+          setScanHistory(prev => [
+            { value: decodedText, timestamp: new Date() },
+            ...prev.slice(0, 9) // Keep only the last 10 scans
+          ]);
+          stopScanning();
+        },
+        (errorMessage) => {
+          // Handle scan error silently
+          console.warn(errorMessage);
+        }
+      );
+    } catch (err) {
+      console.error('Error switching camera:', err);
+      setError('Failed to switch camera');
+    }
+  }, [cameras, selectedCameraId]);
+
   const stopScanning = useCallback(() => {
     if (scannerRef.current && scannerRef.current.isScanning) {
       scannerRef.current.stop().catch(error => {
@@ -143,7 +298,7 @@ const AdminQRReader = () => {
   };
 
   // Don't render until initialized
-  if (!isInitialized) {
+  if (!isMounted || !isInitialized) {
     return (
       <div className="min-h-screen bg-[#3c0052] flex items-center justify-center">
         <div className="text-white text-2xl">Initializing scanner...</div>
@@ -204,39 +359,130 @@ const AdminQRReader = () => {
             )}
             
             {isScanning && (
-              <button
-                onClick={stopScanning}
-                className="w-full mt-4 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
-              >
-                Stop Scanning
-              </button>
+              <div className="flex space-x-2 mt-4">
+                <button
+                  onClick={stopScanning}
+                  className="flex-1 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Stop Scanning
+                </button>
+                {cameras.length > 1 && (
+                  <button
+                    onClick={switchCamera}
+                    className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors"
+                  >
+                    Switch Camera
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Scan Result */}
+      {/* Scan Result and Order Status */}
       {scanResult && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
           <h3 className="text-xl font-bold text-white mb-4">Scan Result</h3>
-          <div className="bg-black/30 rounded-lg p-4">
-            <p className="text-gray-300 mb-2">Scanned Value:</p>
-            <div className="bg-black/50 rounded p-3 break-all">
-              <p className="text-white font-mono">{scanResult}</p>
+          
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 bg-red-500/20 border border-red-500/50 rounded-xl p-4">
+              <p className="text-white">{error}</p>
             </div>
-            <div className="mt-4 flex space-x-2">
-              <button
-                onClick={() => navigator.clipboard.writeText(scanResult)}
-                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-black font-semibold rounded-lg transition-colors"
-              >
-                Copy to Clipboard
-              </button>
-              <button
-                onClick={() => setScanResult(null)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors"
-              >
-                Clear
-              </button>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Scanned Value */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <p className="text-gray-300 mb-2">Scanned Value:</p>
+              <div className="bg-black/50 rounded p-3 break-all">
+                <p className="text-white font-mono">{scanResult}</p>
+              </div>
+              <div className="mt-4 flex space-x-2">
+                <button
+                  onClick={() => navigator.clipboard.writeText(scanResult)}
+                  className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-black font-semibold rounded-lg transition-colors"
+                >
+                  Copy to Clipboard
+                </button>
+                <button
+                  onClick={() => {
+                    setScanResult(null);
+                    setOrderStatus(null);
+                    setOrderDetails(null);
+                  }}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            
+            {/* Order Status */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <p className="text-gray-300 mb-2">Order Status:</p>
+              {isLoadingStatus ? (
+                <div className="bg-black/50 rounded p-3 flex items-center justify-center h-12">
+                  <div className="text-white">Loading...</div>
+                </div>
+              ) : orderStatus ? (
+                <div className="bg-black/50 rounded p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`px-3 py-1 rounded-full text-sm ${
+                      orderStatus === 'completed' || 
+                      orderStatus === 'delivered' || 
+                      orderStatus === 'paid' ||
+                      orderStatus === 'Already Scanned'
+                        ? 'bg-green-500/20 text-green-300' 
+                        : orderStatus === 'cancelled'
+                        ? 'bg-red-500/20 text-red-300'
+                        : 'bg-yellow-500/20 text-yellow-300'
+                    }`}>
+                      {orderStatus}
+                    </span>
+                  </div>
+                  
+                  {orderDetails && (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Order ID:</span>
+                        <span className="text-white">#{orderDetails.orderNumber || orderDetails._id || orderDetails.id}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Date:</span>
+                        <span className="text-white">
+                          {orderDetails.orderDate || orderDetails.createdAt || orderDetails.date
+                            ? new Date(orderDetails.orderDate || orderDetails.createdAt || orderDetails.date).toLocaleDateString()
+                            : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Total:</span>
+                        <span className="text-white">₹{(orderDetails.totalAmount || orderDetails.total || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="mt-4">
+                    <button
+                      onClick={updateOrderStatus}
+                      disabled={isUpdatingStatus || orderStatus === 'Already Scanned'}
+                      className={`w-full px-4 py-2 font-semibold rounded-lg transition-colors ${
+                        isUpdatingStatus || orderStatus === 'Already Scanned'
+                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                          : 'bg-green-500 hover:bg-green-600 text-white'
+                      }`}
+                    >
+                      {isUpdatingStatus ? 'Updating...' : 'Mark as Scanned'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-black/50 rounded p-3 flex items-center justify-center h-12">
+                  <div className="text-gray-400">No status available</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
