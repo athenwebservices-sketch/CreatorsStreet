@@ -1,4 +1,4 @@
-// components/CustomerDashboard.tsx (Updated)
+// components/CustomerDashboard.tsx (Updated with API calls)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,6 +7,22 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import CustomerProducts from './CustomerProducts';
 import CustomerOrders from './CustomerOrders';
+
+// Define a type for orders
+interface Order {
+  _id?: string;
+  id?: string;
+  createdAt?: string;
+  date?: string;
+  totalAmount?: number;
+  total?: number;
+  status?: string;
+  user?: {
+    id?: string;
+    _id?: string;
+  };
+  customerId?: string;
+}
 
 const CustomerDashboard = () => {
   const router = useRouter();
@@ -18,42 +34,119 @@ const CustomerDashboard = () => {
     pendingOrders: 0,
     completedOrders: 0,
   });
+  // FIXED: Properly typed the recentOrders state
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // FIXED: Add effect to set isMounted to true when component mounts on client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
+    // FIXED: Only run this effect on the client side
+    if (!isMounted) return;
+
     // Check if user is logged in
     if (!user) {
       router.push('/login');
       return;
     }
 
-    // Simulate API call for stats
-    const fetchStats = async () => {
+    // Fetch dashboard data from API
+    const fetchDashboardData = async () => {
+      if (!token) return;
       setLoading(true);
+      setError(null);
       try {
-        // In a real app, you would make authenticated API calls here
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Fetch all data in parallel for performance
+        const [productsRes, ordersRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`, { headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',Authorization: `Bearer ${token}` } }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, { headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',Authorization: `Bearer ${token}` } }),
+        ]);
+
+        // Check if responses are ok
+        // if (!productsRes.ok || !ordersRes.ok) {
+        //   throw new Error('Failed to fetch dashboard data');
+        // }
+
+        const productsData = await productsRes.json();
+        const ordersData = await ordersRes.json();
+
+        // Extract arrays safely
+        const products = productsData?.products || productsData || [];
+       
+        const orders = ordersData?.orders || ordersData || [];
+
+        // Get the user ID using multiple possible property names
+        // Using type assertion to bypass TypeScript error
+        const userId = (user as any).id || (user as any)._id || (user as any).sub || (user as any).userId;
+
+        // Filter orders for the current user
+        const userOrders = Array.isArray(orders)
+          ? orders.filter(order => 
+              order.user?.id === userId || 
+              order.user === userId || 
+              order.customerId === userId ||
+              (typeof order.user === 'object' && order.user !== null && (order.user as any)._id === userId)
+            )
+          : [];
+
+        // Calculate total spent from user's orders
+        const totalSpent = userOrders.reduce((sum, order) => {
+          const total = Number(order.totalAmount) || Number(order.total) || 0;
+          return sum + total;
+        }, 0);
+
+        // Count pending and completed orders
+        const pendingOrders = userOrders.filter(order => 
+          order.status === 'pending' || !order.status
+        ).length;
         
+        const completedOrders = userOrders.filter(order => 
+          order.status === 'completed' || order.status === 'delivered'
+        ).length;
+
+        // Get 5 most recent orders for the user
+        // FIXED: Using getTime() to get numeric timestamp for comparison
+        const recent = userOrders
+          .sort((a, b) => new Date(b.createdAt || b.date || '').getTime() - new Date(a.createdAt || a.date || '').getTime())
+          .slice(0, 5);
+
         setStats({
-          totalOrders: 5,
-          totalSpent: 5296.00,
-          pendingOrders: 2,
-          completedOrders: 3,
+          totalOrders: userOrders.length,
+          totalSpent,
+          pendingOrders,
+          completedOrders,
         });
+
+        setRecentOrders(recent);
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.error('Error fetching dashboard data:', error);
+        setError('Failed to load dashboard data. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchStats();
-  }, [user, router]);
+    fetchDashboardData();
+  }, [user, token, router, isMounted]);
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
+
+  // FIXED: Show loading state until component is mounted on client
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-[#3c0052] flex items-center justify-center">
+        <div className="text-white text-2xl">Loading...</div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -77,6 +170,13 @@ const CustomerDashboard = () => {
               <h2 className="text-2xl font-bold text-white mb-2">Welcome back, {user?.email}!</h2>
               <p className="text-gray-300">Here's a summary of your recent activity.</p>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4">
+                <p className="text-white">{error}</p>
+              </div>
+            )}
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -123,30 +223,53 @@ const CustomerDashboard = () => {
                 </button>
               </div>
             </div>
-  
-            {/* Featured Products */}
-            {/* <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
-              <h3 className="text-xl font-bold text-white mb-4">Featured Products</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  { name: 'Creators Street T-Shirt', price: 599, image: '/products/tshirt.jpg' },
-                  { name: 'Event Pass - VIP', price: 2499, image: '/products/vip-pass.jpg' },
-                  { name: 'Gaming Mouse Pad', price: 299, image: '/products/mousepad.jpg' },
-                ].map((product, index) => (
-                  <div key={index} className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors cursor-pointer">
-                    <div className="aspect-square w-full overflow-hidden bg-white/10 rounded-lg mb-3">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <h4 className="text-white font-medium mb-1">{product.name}</h4>
-                    <div className="text-yellow-400 font-bold">₹{product.price.toLocaleString()}</div>
-                  </div>
-                ))}
-              </div>
-            </div> */}
+
+            {/* Recent Orders */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4">Recent Orders</h3>
+              {recentOrders.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-white">
+                    <thead>
+                      <tr className="border-b border-white/20">
+                        <th className="text-left py-3 px-2">Order ID</th>
+                        <th className="text-left py-3 px-2">Date</th>
+                        <th className="text-left py-3 px-2">Total</th>
+                        <th className="text-left py-3 px-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentOrders.map((order) => {
+                        // FIXED: Extract date value and check it explicitly
+                        const orderDate = order.createdAt || order.date;
+                        return (
+                          <tr key={order._id || order.id} className="border-b border-white/10">
+                            <td className="py-3 px-2">#{order._id || order.id}</td>
+                            <td className="py-3 px-2">
+                              {orderDate ? new Date(orderDate).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td className="py-3 px-2">₹{(order.totalAmount || order.total || 0).toLocaleString()}</td>
+                            <td className="py-3 px-2">
+                              <span className={`px-2 py-1 rounded-full text-xs ${
+                                order.status === 'completed' || order.status === 'delivered' 
+                                  ? 'bg-green-500/20 text-green-300' 
+                                  : order.status === 'cancelled'
+                                  ? 'bg-red-500/20 text-red-300'
+                                  : 'bg-yellow-500/20 text-yellow-300'
+                              }`}>
+                                {order.status || 'pending'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-300 text-center py-4">No recent orders found.</p>
+              )}
+            </div>
           </div>
         );
     }

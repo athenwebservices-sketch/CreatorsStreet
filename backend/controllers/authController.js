@@ -33,7 +33,7 @@ exports.register = async (req, res, next) => {
   html: `<p>Your OTP is: <b>${otp}</b></p>`,
 });
         console.log('Registration OTP for', email, 'is:', otp);
-        return res.status(400).json({
+        return res.status(200).json({
           message: 'User already exists but not verified. OTP sent again.',
           sessionToken,
           otp:otp

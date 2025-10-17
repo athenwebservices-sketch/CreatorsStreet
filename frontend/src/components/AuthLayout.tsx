@@ -12,7 +12,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
   const [isHovering, setIsHovering] = useState(false);
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      <Navbar isHovering={isHovering} setIsHovering={setIsHovering} />
+      <Navbar  />
       {children}
     </div>
   );

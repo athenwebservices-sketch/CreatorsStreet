@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import axios from 'axios'; // Added this import
 import AdminOrders from './AdminOrders';
 import AdminProducts from './AdminProducts';
 import AdminUsers from './AdminUsers';
@@ -28,18 +29,49 @@ const AdminDashboard = () => {
       return;
     }
 
-    // Simulate API call for stats
+    // Check if token exists
+    if (!token) return;
+    setLoading(true);
+    console.log(token)
+    // Fetch all data in parallel for performance
     const fetchStats = async () => {
-      setLoading(true);
       try {
-        // In a real app, you would make authenticated API calls here
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        const [productsRes, usersRes, ordersRes] = await Promise.all([
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/products`, { headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',Authorization: `Bearer ${token}` } }),
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, { headers: {'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '', Authorization: `Bearer ${token}` } }),
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, { headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',Authorization: `Bearer ${token}` } }),
+        ]);
+
+        // Extract arrays safely
+        const products = productsRes.data?.products || productsRes.data || [];
+        const users = usersRes.data?.users || usersRes.data || [];
+        const orders = ordersRes.data?.orders || ordersRes.data || [];
+         const totalOrders = ordersRes.data?.total || 0;
+
+console.log('Total Orders:', totalOrders);
+        // Calculate total revenue from orders
+        const totalRevenue = Array.isArray(orders)
+          ? orders.reduce((sum, order) => {
+              const total =
+                Number(order.totalAmount) ||
+                Number(order.total) ||
+                0;
+              return sum + total;
+            }, 0)
+          : 0;
+
+        // // Get 5 most recent orders
+        // const recent = Array.isArray(orders)
+        //   ? orders
+        //       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        //       .slice(0, 5)
+        //   : [];
+
         setStats({
-          totalOrders: 156,
-          totalRevenue: 45678.90,
-          totalUsers: 89,
-          totalProducts: 43,
+          totalOrders: totalOrders,
+          totalRevenue,
+          totalUsers: users.length,
+          totalProducts: products.length,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -49,7 +81,7 @@ const AdminDashboard = () => {
     };
     
     fetchStats();
-  }, [user, router]);
+  }, [user, token, router]);
 
   const handleLogout = () => {
     logout();
@@ -82,18 +114,18 @@ const AdminDashboard = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center">
                 <div className="text-4xl mb-2">📦</div>
                 <div className="text-3xl font-bold text-white mb-1">{stats.totalOrders}</div>
                 <div className="text-gray-300">Total Orders</div>
               </div>
               
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center">
+               {/* <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center">
                 <div className="text-4xl mb-2">💰</div>
-                <div className="text-3xl font-bold text-white mb-1">${stats.totalRevenue.toLocaleString()}</div>
+                <div className="text-3xl font-bold text-white mb-1">{stats.totalRevenue.toLocaleString()}</div>
                 <div className="text-gray-300">Total Revenue</div>
-              </div>
+              </div> */}
               
               <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center">
                 <div className="text-4xl mb-2">👥</div>

@@ -14,6 +14,12 @@ const Leaders = ({ isHovering, setIsHovering }) => {
       color: "#F44336",
       image: "/Sanjay.png"  // Replace with your image URL
     },
+    {
+      name: "Mr. Himanshu Chaturvedi",
+      description: "Founder and Director of MotionGility",
+      color: "#00BCD4",
+      image: "/Jury3.jpeg"  // Replace with your image URL
+    }
   ];
 
   return (
@@ -27,16 +33,16 @@ const Leaders = ({ isHovering, setIsHovering }) => {
         <h2 className="text-4xl md:text-5xl font-bold text-white mb-16">
           Jury
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6 justify-center items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-center items-center max-w-6xl mx-auto">
           {leaders.map((zone, index) => (
             <div
               key={index}
-              className="relative group cursor-pointer overflow-hidden rounded-xl bg-white/10 transition-all duration-300"
+              className="relative group cursor-pointer overflow-hidden rounded-xl bg-white/10 transition-all duration-300 transform hover:scale-105"
               style={{
                 backgroundColor: `${zone.color}20`,
-                minHeight: '350px',
+                minHeight: '380px', // Increased min-height to accommodate the new aspect ratio
                 height: 'auto',
-                padding: '1rem',
+                padding: '0.75rem',
               }}
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
@@ -45,20 +51,20 @@ const Leaders = ({ isHovering, setIsHovering }) => {
               <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
               {/* Inner Content */}
-              <div className="relative z-10 p-6 flex flex-col justify-between rounded-xl border border-white/20">
-                {/* Icon Container - Flex to center the image */}
-                <div className="aspect-square rounded-lg mb-4 overflow-hidden bg-gradient-to-br from-white/10 to-white/20 flex justify-center items-center">
+              <div className="relative z-10 p-4 flex flex-col justify-between rounded-xl border border-white/20 h-full">
+                {/* Icon Container - Changed aspect ratio and image object fit */}
+                <div className="aspect-[4/5] rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-white/10 to-white/20 flex justify-center items-center">
                   <div className="w-full h-full flex items-center justify-center">
                     <img
                       src={zone.image}
                       alt={zone.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-top"
                     />
                   </div>
                 </div>
 
-                <h3 className="text-xl font-bold mb-2 text-white">{zone.name}</h3>
-                <p className="text-gray-300 text-sm leading-relaxed" style={{ maxHeight: '100px', overflow: 'hidden' }}>
+                <h3 className="text-lg font-bold mb-2 text-white">{zone.name}</h3>
+                <p className="text-gray-300 text-sm leading-relaxed" style={{ maxHeight: '80px', overflow: 'hidden' }}>
                   {zone.description}
                 </p>
               </div>
