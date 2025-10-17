@@ -161,7 +161,7 @@ const AdminDashboard = () => {
                       <th className="text-left py-3 px-4">Order Number</th>
                       <th className="text-left py-3 px-4">Customer</th>
                       <th className="text-left py-3 px-4">Status</th>
-                      <th className="text-left py-3 px-4">Payment Status</th>
+                      {/* <th className="text-left py-3 px-4">Payment Status</th> */}
                       <th className="text-left py-3 px-4">Total</th>
                       <th className="text-left py-3 px-4">Date</th>
                     </tr>
@@ -185,7 +185,7 @@ const AdminDashboard = () => {
                             {order.status}
                           </span>
                         </td>
-                        <td className="py-3 px-4">
+                        {/* <td className="py-3 px-4">
                           <span className={`px-2 py-1 rounded-full text-xs ${
                             order.paymentStatus === 'paid' 
                               ? 'bg-green-500/20 text-green-300' 
@@ -193,7 +193,7 @@ const AdminDashboard = () => {
                           }`}>
                             {order.paymentStatus}
                           </span>
-                        </td>
+                        </td> */}
                         <td className="py-3 px-4">${order.totalAmount}</td>
                         <td className="py-3 px-4">
                           {new Date(order.orderDate).toLocaleDateString()}

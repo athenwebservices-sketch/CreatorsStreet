@@ -60,9 +60,36 @@ const Navbar = ({ isHovering, setIsHovering }) => {
 
   // Function to handle navigation to login/register
   const handleNavigation = (path) => {
-    router.push(path);
-    setMobileMenuOpen(false);
-  };
+  router.push(path);
+  setMobileMenuOpen(false);
+  
+  // Force a refresh if needed
+  // if (path === '/register') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
+  // if (path === '/register') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
+  // if (path === '/register') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
+  // if (path === '/customer-dashboard') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
+  // if (path === '/admin-dashboard') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
+};
 
   return (
     <div className="relative" onClick={handleCloseMenu}>

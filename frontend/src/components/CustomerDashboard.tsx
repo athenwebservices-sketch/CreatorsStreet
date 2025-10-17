@@ -12,11 +12,15 @@ import CustomerOrders from './CustomerOrders';
 interface Order {
   _id?: string;
   id?: string;
+  orderNumber?: string;
+  orderDate?: string;
   createdAt?: string;
   date?: string;
   totalAmount?: number;
   total?: number;
   status?: string;
+  paymentStatus?: string;
+  userId?: string;
   user?: {
     id?: string;
     _id?: string;
@@ -44,18 +48,19 @@ const CustomerDashboard = () => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-  // In CustomerDashboard.tsx, add this to the existing useEffect hooks
 
-useEffect(() => {
-  // Check for tab parameter in URL
-  if (typeof window !== 'undefined') {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get('tab');
-    if (tabParam && ['dashboard', 'products', 'orders'].includes(tabParam)) {
-      setActiveTab(tabParam);
+  // In CustomerDashboard.tsx, add this to the existing useEffect hooks
+  useEffect(() => {
+    // Check for tab parameter in URL
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam && ['dashboard', 'products', 'orders'].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
     }
-  }
-}, []);
+  }, []);
+
   useEffect(() => {
     // FIXED: Only run this effect on the client side
     if (!isMounted) return;
@@ -74,30 +79,42 @@ useEffect(() => {
       try {
         // Fetch all data in parallel for performance
         const [productsRes, ordersRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`, { headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',Authorization: `Bearer ${token}` } }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, { headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',Authorization: `Bearer ${token}` } }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`, { 
+            headers: { 
+              'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
+              Authorization: `Bearer ${token}` 
+            } 
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, { 
+            headers: { 
+              'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
+              Authorization: `Bearer ${token}` 
+            } 
+          }),
         ]);
 
         // Check if responses are ok
-        // if (!productsRes.ok || !ordersRes.ok) {
-        //   throw new Error('Failed to fetch dashboard data');
-        // }
+        if (!productsRes.ok || !ordersRes.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
 
         const productsData = await productsRes.json();
         const ordersData = await ordersRes.json();
 
         // Extract arrays safely
         const products = productsData?.products || productsData || [];
-       
+        
+        // FIXED: Extract orders from the correct property in the API response
         const orders = ordersData?.orders || ordersData || [];
 
         // Get the user ID using multiple possible property names
         // Using type assertion to bypass TypeScript error
         const userId = (user as any).id || (user as any)._id || (user as any).sub || (user as any).userId;
 
-        // Filter orders for the current user
+        // FIXED: Filter orders for the current user using the correct field name
         const userOrders = Array.isArray(orders)
           ? orders.filter(order => 
+              order.userId === userId ||
               order.user?.id === userId || 
               order.user === userId || 
               order.customerId === userId ||
@@ -111,19 +128,24 @@ useEffect(() => {
           return sum + total;
         }, 0);
 
-        // Count pending and completed orders
+        // FIXED: Count pending and completed orders based on the API response structure
         const pendingOrders = userOrders.filter(order => 
-          order.status === 'pending' || !order.status
+          order.status === 'pending' || 
+          order.paymentStatus === 'pending' ||
+          !order.status
         ).length;
         
         const completedOrders = userOrders.filter(order => 
-          order.status === 'completed' || order.status === 'delivered'
+          order.status === 'completed' || 
+          order.status === 'delivered' ||
+          order.status === 'paid' ||
+          order.paymentStatus === 'paid'
         ).length;
 
         // Get 5 most recent orders for the user
-        // FIXED: Using getTime() to get numeric timestamp for comparison
+        // FIXED: Using orderDate from the API response
         const recent = userOrders
-          .sort((a, b) => new Date(b.createdAt || b.date || '').getTime() - new Date(a.createdAt || a.date || '').getTime())
+          .sort((a, b) => new Date(b.orderDate || b.createdAt || b.date || '').getTime() - new Date(a.orderDate || a.createdAt || a.date || '').getTime())
           .slice(0, 5);
 
         setStats({
@@ -236,7 +258,7 @@ useEffect(() => {
             </div>
 
             {/* Recent Orders */}
-            {/* <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
               <h3 className="text-xl font-bold text-white mb-4">Recent Orders</h3>
               {recentOrders.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -252,23 +274,26 @@ useEffect(() => {
                     <tbody>
                       {recentOrders.map((order) => {
                         // FIXED: Extract date value and check it explicitly
-                        const orderDate = order.createdAt || order.date;
+                        const orderDate = order.orderDate || order.createdAt || order.date;
                         return (
                           <tr key={order._id || order.id} className="border-b border-white/10">
-                            <td className="py-3 px-2">#{order._id || order.id}</td>
+                            <td className="py-3 px-2">#{order.orderNumber || order._id || order.id}</td>
                             <td className="py-3 px-2">
                               {orderDate ? new Date(orderDate).toLocaleDateString() : 'N/A'}
                             </td>
                             <td className="py-3 px-2">₹{(order.totalAmount || order.total || 0).toLocaleString()}</td>
                             <td className="py-3 px-2">
                               <span className={`px-2 py-1 rounded-full text-xs ${
-                                order.status === 'completed' || order.status === 'delivered' 
+                                order.status === 'completed' || 
+                                order.status === 'delivered' || 
+                                order.status === 'paid' ||
+                                order.paymentStatus === 'paid'
                                   ? 'bg-green-500/20 text-green-300' 
                                   : order.status === 'cancelled'
                                   ? 'bg-red-500/20 text-red-300'
                                   : 'bg-yellow-500/20 text-yellow-300'
                               }`}>
-                                {order.status || 'pending'}
+                                {order.status || order.paymentStatus || 'pending'}
                               </span>
                             </td>
                           </tr>
@@ -280,7 +305,7 @@ useEffect(() => {
               ) : (
                 <p className="text-gray-300 text-center py-4">No recent orders found.</p>
               )}
-            </div> */}
+            </div>
           </div>
         );
     }
