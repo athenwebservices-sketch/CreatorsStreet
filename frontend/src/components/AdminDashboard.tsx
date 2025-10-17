@@ -9,6 +9,7 @@ import axios from 'axios';
 import AdminOrders from './AdminOrders';
 import AdminProducts from './AdminProducts';
 import AdminUsers from './AdminUsers';
+import AdminQRReader from './AdminQRReader'; // Import the new component
 
 const AdminDashboard = () => {
   const router = useRouter();
@@ -107,6 +108,7 @@ const AdminDashboard = () => {
   }
 
   const renderContent = () => {
+    console.log(user?.email==="temp@admin.com");  // Add this for debugging
     switch (activeTab) {
       case 'orders':
         // Fixed: Changed ordersData to initialData to match the expected prop
@@ -115,6 +117,8 @@ const AdminDashboard = () => {
         return <AdminProducts />;
       case 'users':
         return <AdminUsers />;
+      case 'qr-reader': // Add the new QR Reader case
+        return <AdminQRReader />;
       default:
         return (
           <div className="space-y-6">
@@ -161,7 +165,6 @@ const AdminDashboard = () => {
                       <th className="text-left py-3 px-4">Order Number</th>
                       <th className="text-left py-3 px-4">Customer</th>
                       <th className="text-left py-3 px-4">Status</th>
-                      {/* <th className="text-left py-3 px-4">Payment Status</th> */}
                       <th className="text-left py-3 px-4">Total</th>
                       <th className="text-left py-3 px-4">Date</th>
                     </tr>
@@ -185,15 +188,6 @@ const AdminDashboard = () => {
                             {order.status}
                           </span>
                         </td>
-                        {/* <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            order.paymentStatus === 'paid' 
-                              ? 'bg-green-500/20 text-green-300' 
-                              : 'bg-yellow-500/20 text-yellow-300'
-                          }`}>
-                            {order.paymentStatus}
-                          </span>
-                        </td> */}
                         <td className="py-3 px-4">${order.totalAmount}</td>
                         <td className="py-3 px-4">
                           {new Date(order.orderDate).toLocaleDateString()}
@@ -208,7 +202,7 @@ const AdminDashboard = () => {
             {/* Quick Actions */}
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
               <h3 className="text-xl font-bold text-white mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <button
                   onClick={() => setActiveTab('orders')}
                   className="p-4 bg-yellow-400 hover:bg-yellow-300 text-black font-semibold rounded-lg transition-colors"
@@ -227,6 +221,12 @@ const AdminDashboard = () => {
                 >
                   Manage Users
                 </button>
+                {user?.email=="temp@admin.com" &&( <button
+                  onClick={() => setActiveTab('qr-reader')}
+                  className="p-4 bg-yellow-400 hover:bg-yellow-300 text-black font-semibold rounded-lg transition-colors"
+                >
+                  QR Scanner
+                </button>)}
               </div>
             </div>
           </div>
@@ -271,6 +271,7 @@ const AdminDashboard = () => {
               { id: 'orders', label: 'Orders', icon: '📦' },
               { id: 'products', label: 'Products', icon: '🛍️' },
               { id: 'users', label: 'Users', icon: '👥' },
+              { id: 'qr-reader', label: 'QR Scanner', icon: '📷' }, // Add QR Scanner tab
             ].map((tab) => (
               <button
                 key={tab.id}

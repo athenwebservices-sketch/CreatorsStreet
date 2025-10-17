@@ -18,7 +18,7 @@ const Awards = ({ isHovering, setIsHovering }) => {
       imageSeed: "/Awards.jpg"
     },
     {
-      name: "Special Carogery Awards 2025",
+      name: "Special Cataogery Awards 2025",
       link: "https://docs.google.com/forms/d/e/1FAIpQLSdWxEblCh_nEGUJ5HSefC70Q0aigC_yGUo7WHDcQDPHbUeLFg/viewform?usp=header",
       imageSeed: "/Awards.jpg"
     }

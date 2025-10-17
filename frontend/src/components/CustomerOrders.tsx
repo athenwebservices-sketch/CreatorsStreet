@@ -252,7 +252,6 @@ const CustomerOrders = () => {
                       <th className="text-left py-3 px-4 text-white font-semibold">Date</th>
                       <th className="text-left py-3 px-4 text-white font-semibold">Items</th>
                       <th className="text-left py-3 px-4 text-white font-semibold">Total</th>
-                      {/* <th className="text-left py-3 px-4 text-white font-semibold">Payment</th> */}
                       <th className="text-left py-3 px-4 text-white font-semibold">Status</th>
                       <th className="text-left py-3 px-4 text-white font-semibold">QR Code</th>
                     </tr>
@@ -270,18 +269,13 @@ const CustomerOrders = () => {
                         <td className="py-3 px-4 text-white">
                           ₹{order.totalAmount.toLocaleString()}
                         </td>
-                        {/* <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPaymentStatusColor(order.paymentStatus)}`}>
-                            {order.paymentStatus}
-                          </span>
-                        </td> */}
                         <td className="py-3 px-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
                             {order.status}
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          {order.paymentStatus === 'pending' ? (
+                          {order.status.toLowerCase() === 'paid' ? (
                             <button
                               onClick={() => openQrModal(order.orderNumber)}
                               className="px-3 py-1 bg-yellow-400 text-black rounded text-sm font-medium hover:bg-yellow-300 transition-colors"

@@ -301,10 +301,10 @@ const RazorpayPayment = ({
             finalOrderId = updatedOrder._id || updatedOrder.data?._id || orderData._id;
 
             // Create a payment record in your backend
-            const paymentPayload = {
+           const paymentPayload = {
               orderId: finalOrderId,
-              paymentId: response.razorpay_payment_id,
-              razorpayOrderId: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
               signature: response.razorpay_signature,
               amount: product.price,
             };
