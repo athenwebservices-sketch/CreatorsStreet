@@ -23,6 +23,13 @@ const Navbar = ({ isHovering, setIsHovering }) => {
   };
 
   const handleScrollToSection = (id) => {
+    // If not on the home page, navigate to home page first
+    if (pathname !== '/') {
+      window.location.href = `/#${id}`;
+      return;
+    }
+    
+    // If on home page, scroll to the section
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });

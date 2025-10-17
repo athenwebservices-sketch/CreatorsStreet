@@ -160,7 +160,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           )}
           
           {/* Stock Badge */}
-          <div className="absolute top-2 right-2">
+          {/* <div className="absolute top-2 right-2">
             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
               product.stock > 0 
                 ? 'bg-green-500/80 text-white' 
@@ -168,7 +168,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             }`}>
               {product.stock > 0 ? `${product.stock} in stock` : 'Out of Stock'}
             </span>
-          </div>
+          </div> */}
 
           {/* Category Badge */}
           {product.category && (

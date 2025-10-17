@@ -39,7 +39,7 @@ exports.register = async (req, res, next) => {
           otp:otp
         });
       }
-      return res.status(400).json({ message: 'User already exists and is verified.' });
+      return res.status(200).json({ message: 'User already exists and is verified.' });
     }
 
     // Create new user if not found

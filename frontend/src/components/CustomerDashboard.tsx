@@ -236,7 +236,7 @@ useEffect(() => {
             </div>
 
             {/* Recent Orders */}
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
+            {/* <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
               <h3 className="text-xl font-bold text-white mb-4">Recent Orders</h3>
               {recentOrders.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -280,7 +280,7 @@ useEffect(() => {
               ) : (
                 <p className="text-gray-300 text-center py-4">No recent orders found.</p>
               )}
-            </div>
+            </div> */}
           </div>
         );
     }
