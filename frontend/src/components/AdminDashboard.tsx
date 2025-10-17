@@ -109,7 +109,8 @@ const AdminDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'orders':
-        return <AdminOrders ordersData={ordersData} />;
+        // Fixed: Changed ordersData to initialData to match the expected prop
+        return <AdminOrders initialData={ordersData} />;
       case 'products':
         return <AdminProducts />;
       case 'users':
