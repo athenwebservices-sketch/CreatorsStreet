@@ -62,33 +62,33 @@ const Navbar = ({ isHovering, setIsHovering }) => {
   const handleNavigation = (path) => {
   router.push(path);
   setMobileMenuOpen(false);
-  console.log(path,"path")
-  //Force a refresh if needed
-  if (path === '/register') {
-    setTimeout(() => {
-      window.location.href = path;
-    }, 100);
-  }
-  if (path === '/register') {
-    setTimeout(() => {
-      window.location.href = path;
-    }, 100);
-  }
-  if (path === '/register') {
-    setTimeout(() => {
-      window.location.href = path;
-    }, 100);
-  }
-  if (path === '/customer-dashboard') {
-    setTimeout(() => {
-      window.location.href = path;
-    }, 100);
-  }
-  if (path === '/admin-dashboard') {
-    setTimeout(() => {
-      window.location.href = path;
-    }, 100);
-  }
+  
+  // Force a refresh if needed
+  // if (path === '/register') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
+  // if (path === '/register') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
+  // if (path === '/register') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
+  // if (path === '/customer-dashboard') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
+  // if (path === '/admin-dashboard') {
+  //   setTimeout(() => {
+  //     window.location.href = path;
+  //   }, 100);
+  // }
 };
 
   return (
