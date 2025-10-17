@@ -27,19 +27,19 @@ exports.register = async (req, res, next) => {
           { upsert: true, new: true }
         );
         await sendMail({
-  to: email,
-  subject: 'Your OTP for Registration',
-  text: `Your OTP is: ${otp}`,
-  html: `<p>Your OTP is: <b>${otp}</b></p>`,
-});
+          to: email,
+          subject: 'Your OTP for Registration',
+          text: `Your OTP is: ${otp}`,
+          html: `<p>Your OTP is: <b>${otp}</b></p>`,
+        });
         console.log('Registration OTP for', email, 'is:', otp);
         return res.status(200).json({
           message: 'User already exists but not verified. OTP sent again.',
           sessionToken,
-          otp:otp
+          otp: otp
         });
       }
-      return res.status(200).json({ message: 'User already exists and is verified.' });
+      return res.status(400).json({ message: 'User already exists and is verified.' });
     }
 
     // Create new user if not found
@@ -60,18 +60,18 @@ exports.register = async (req, res, next) => {
     const session = new Session({ userId: user._id, token: sessionToken, lastUsedAt: new Date() });
     await session.save();
     await sendMail({
-  to: email,
-  subject: 'Your OTP for Registration',
-  text: `Your OTP is: ${otp}`,
-  html: `<p>Your OTP is: <b>${otp}</b></p>`,
-});
+      to: email,
+      subject: 'Your OTP for Registration',
+      text: `Your OTP is: ${otp}`,
+      html: `<p>Your OTP is: <b>${otp}</b></p>`,
+    });
 
-console.log(`Registration OTP sent to ${email}`);
-res.status(201).json({
-  message: 'User created. OTP sent to email. Use /verify-otp with otp and sessionToken.',
-  sessionToken,
-  otp // you can remove this in production
-});
+    console.log(`Registration OTP sent to ${email}`);
+    res.status(201).json({
+      message: 'User created. OTP sent to email. Use /verify-otp with otp and sessionToken.',
+      sessionToken,
+      otp // you can remove this in production
+    });
     console.log('Registration OTP for', email, 'is:', otp);
     res.status(201).json({
       message: 'User created. OTP sent to email (console). Use /verify-otp with otp and sessionToken.',
@@ -100,7 +100,7 @@ exports.verifyOtp = async (req, res, next) => {
     session.lastUsedAt = new Date();
     await session.save();
 
-    res.json({ token: jwtToken,user:user });
+    res.json({ token: jwtToken, user: user });
   } catch (err) { next(err); }
 };
 
@@ -123,7 +123,7 @@ exports.login = async (req, res, next) => {
     const jwtToken = signToken(user);
     const session = new Session({ userId: user._id, token: jwtToken, lastUsedAt: new Date() });
     await session.save();
-    res.json({ token: jwtToken ,user:user});
+    res.json({ token: jwtToken, user: user });
   } catch (err) {
     next(err);
   }
@@ -131,7 +131,7 @@ exports.login = async (req, res, next) => {
 
 exports.logout = async (req, res, next) => {
   try {
-    const token = (req.headers.authorization||'').split(' ')[1];
+    const token = (req.headers.authorization || '').split(' ')[1];
     if (token) await Session.deleteOne({ token });
     res.json({ message: 'Logged out' });
   } catch (err) { next(err); }

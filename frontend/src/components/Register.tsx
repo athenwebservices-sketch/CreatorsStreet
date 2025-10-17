@@ -20,7 +20,7 @@ const Register = () => {
   const [step, setStep] = useState(1); // 1: Registration, 2: OTP Verification
   const [otpData, setOtpData] = useState({
     sessionToken: '',
-    otp: ''
+    otp: '' // 初始为空
   });
   const [otpSent, setOtpSent] = useState(false);
   const [resendDisabled, setResendDisabled] = useState(false);
@@ -37,7 +37,7 @@ const Register = () => {
   const handleOtpChange = (e) => {
     const { name, value } = e.target;
 
-    // Make sure to allow only numbers (if needed) and limit length to 6
+    // Make sure to allow only numbers and limit length to 6
     if (/^\d{0,6}$/.test(value)) {
       setOtpData(prev => ({
         ...prev,
@@ -79,9 +79,10 @@ const Register = () => {
       }
 
       // Handle successful registration
+      // 只保存sessionToken，不保存OTP值
       setOtpData({
         sessionToken: data.sessionToken,
-        otp: data.otp
+        otp: '' // 确保这里为空
       });
       setOtpSent(true);
       setStep(2);
@@ -158,10 +159,10 @@ const Register = () => {
         throw new Error(data.message || 'Failed to resend OTP');
       }
 
-      // Update OTP data
+      // Update OTP data - 只保存sessionToken，不保存OTP值
       setOtpData({
         sessionToken: data.sessionToken,
-        otp: data.otp
+        otp: '' // 确保这里为空
       });
 
       setError('OTP has been resent to your email');
@@ -334,12 +335,12 @@ const Register = () => {
                     type="text"
                     id="otp"
                     name="otp"
-                    value={otpData.otp}  // Connect to the state
+                    value={otpData.otp}
                     onChange={handleOtpChange}
                     required
                     maxLength={6}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-center text-lg"
-                    placeholder="Only Numbers"
+                    placeholder="Enter 6-digit code"
                   />
                 </div>
 
@@ -377,35 +378,6 @@ const Register = () => {
               </form>
             </>
           )}
-
-          {/* <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/20"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-[#3c0052] text-gray-300">Or register with</span>
-              </div>
-            </div>
-            
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-white/20 rounded-lg shadow-sm bg-white/10 text-sm font-medium text-gray-300 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400"
-              >
-                <span className="sr-only">Register with Google</span>
-                Google
-              </button>
-              
-              <button
-                type="button"
-                className="w-full inline-flex justify-center py-2 px-4 border border-white/20 rounded-lg shadow-sm bg-white/10 text-sm font-medium text-gray-300 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400"
-              >
-                <span className="sr-only">Register with Facebook</span>
-                Facebook
-              </button>
-            </div>
-          </div> */}
         </div>
       </div>
     </div>
