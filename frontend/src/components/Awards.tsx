@@ -28,7 +28,7 @@ const Awards = ({ isHovering, setIsHovering }) => {
     <section id="Awards" className="relative bg-[#3c0052] py-20">
       <div className="container mx-auto px-6 py-10 sm:py-14 md:py-16">
         <h2 className="text-4xl md:text-5xl font-bold text-center text-white mb-16">
-          Creator Street Awards
+          Creators Street Awards
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">

@@ -15,7 +15,6 @@ async function createCustomServer() {
     const nextApp = next({ 
       dev,
       dir: process.cwd(),
-      // In production, use the current directory where .next is located
       conf: dev ? undefined : { distDir: './.next' }
     });
 
@@ -24,8 +23,48 @@ async function createCustomServer() {
 
     // Create HTTP server that will handle both Next.js and Socket.IO
     const server = createServer((req, res) => {
+      const url = req.url || '';
+
+      // =============================================================
+      // == START: FIRST-TIME VISITOR REDIRECT LOGIC ================
+      // =============================================================
+      
+      // A helper function to parse cookies from the request header
+      const parseCookies = (req: any) => {
+        const list = {};
+        const rc = req.headers.cookie;
+        rc && rc.split(';').forEach(function(cookie) {
+          const parts = cookie.split('=');
+          const key = parts.shift().trim();
+          const value = decodeURI(parts.join('='));
+          (list as any)[key] = value;
+        });
+        return list;
+      };
+
+      const cookies = parseCookies(req);
+
+      // Check if our special cookie exists. If not, this is a first-time visit.
+      if (!cookies.initial_redirect_done) {
+        // Set the cookie so we don't redirect again on the next request.
+        // 'Path=/' makes it available across the entire site.
+        // 'HttpOnly' is a security best practice.
+        res.setHeader('Set-Cookie', 'initial_redirect_done=true; Path=/; HttpOnly; SameSite=Lax');
+        
+        // Redirect to the home page.
+        // 307 is a Temporary Redirect, which is appropriate here.
+        res.writeHead(307, { Location: '/' });
+        res.end();
+        return; // Important: Stop processing the request further
+      }
+
+      // =============================================================
+      // == END: FIRST-TIME VISITOR REDIRECT LOGIC ==================
+      // =============================================================
+
+      // If the cookie exists, proceed with normal request handling
       // Skip socket.io requests from Next.js handler
-      if (req.url?.startsWith('/api/socketio')) {
+      if (url.startsWith('/api/socketio')) {
         return;
       }
       handle(req, res);
