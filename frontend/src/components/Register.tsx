@@ -214,7 +214,7 @@ const Register = () => {
                     onChange={handleChange}
                     required
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                    placeholder="Name"
+                    placeholder="John Doe"
                   />
                 </div>
                 
@@ -330,7 +330,7 @@ const Register = () => {
                     type="text"
                     id="otp"
                     name="otp"
-                    value=""
+                    value={otpData.otp}
                     onChange={handleOtpChange}
                     required
                     maxLength={6}

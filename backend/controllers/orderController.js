@@ -25,6 +25,49 @@ exports.createOrder = async (req,res,next)=>{
   }catch(e){next(e)}
 };
 
+exports.updateStatusByNumber = async (req, res, next) => {
+  try {
+    const { orderNumber } = req.params;
+    if (!orderNumber) {
+      return res.status(400).json({ message: 'Order number is required' });
+    }
+
+    // Find the order by its unique orderNumber
+    const order = await Order.findOne({ orderNumber: orderNumber });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found with that number' });
+    }
+
+    // --- REVISED PERMISSION CHECK ---
+    // If the user is a customer, ensure they own the order.
+    // If the user is an admin (or other non-customer role), they are allowed.
+    console.log(order.userId.toString())
+    console.log(req.user._id.toString())
+    if (req.user.role === 'customer' && order.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this order' });
+    }
+
+    // Update the status from the request body
+    const { status } = req.body;
+    if (!status) {
+        return res.status(400).json({ message: 'Status is required in the request body' });
+    }
+
+    // NOTE: You might want to add business logic here to restrict
+    // which statuses a customer can set (e.g., they can only set it to 'cancelled').
+    // For now, this allows any status update for the owner or an admin.
+    order.status = status;
+
+    await order.save();
+
+    // Return the updated order as a plain object
+    res.json(order.toObject());
+  } catch (e) {
+    next(e);
+  }
+};
+
 exports.list = async (req,res,next)=>{
   try{
     const page = Math.max(1, parseInt(req.query.page||'1'));

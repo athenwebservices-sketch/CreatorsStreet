@@ -1,60 +1,31 @@
 // components/Navbar.tsx (Updated)
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { FaInstagram, FaFacebookF } from 'react-icons/fa';
 import { FaLinkedinIn } from 'react-icons/fa';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import { FaTicketAlt } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
 
-const Navbar = () => {
-  const [isHovering, setIsHovering] = useState(false);
+const Navbar = ({ isHovering, setIsHovering }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const sections = ["Awards", "Cosplay", "Exhibit With Us", "Events"];
-  
-  // This is safe to use in any component, even during server render
-  const isClient = typeof window !== 'undefined';
-  
-  // Set active section based on URL hash
-  useEffect(() => {
-    if (isClient) {
-      const hash = window.location.hash.replace('#', '');
-      setActiveSection(hash);
-      
-      const handleHashChange = () => {
-        const newHash = window.location.hash.replace('#', '');
-        setActiveSection(newHash);
-      };
-      
-      window.addEventListener('hashchange', handleHashChange);
-      return () => window.removeEventListener('hashchange', handleHashChange);
-    }
-  }, [isClient]);
-  
+
   const handleCloseMenu = (e) => {
     if (mobileMenuOpen) {
       setMobileMenuOpen(false);
     }
   };
 
-  // Navigation handler for section links
-  const handleNavClick = (sectionId: string) => {
-    // If we're not on the home page, navigate to home with hash
-    if (pathname !== '/') {
-      router.push(`/#${sectionId}`);
-    } else {
-      // If we're on the home page, scroll to the section
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-      }
+  const handleScrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -67,8 +38,10 @@ const Navbar = () => {
   const getDisplayName = () => {
     if (!user) return '';
     
+    // If user has a name property, use it
     if (user.name) return user.name.split(' ')[0];
     
+    // Otherwise, extract name from email (everything before @)
     const emailParts = user.email.split('@');
     if (emailParts.length > 0) {
       return emailParts[0];
@@ -113,12 +86,11 @@ const Navbar = () => {
               {sections.map((item) => (
                 <a
                   key={item}
-                  onClick={() => handleNavClick(item)}
-                  className={`text-gray-300 hover:text-purple-400 transition-colors duration-300 font-medium cursor-pointer ${
-                    pathname === '/' && activeSection === item
-                      ? 'text-yellow-400'
-                      : ''
-                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleScrollToSection(item);
+                  }}
+                  className="text-gray-300 hover:text-purple-400 transition-colors duration-300 font-medium cursor-pointer"
                 >
                   {item.replace(/([A-Z])/g, ' $1').trim()}
                 </a>
@@ -157,7 +129,7 @@ const Navbar = () => {
                     <button className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 rounded-full transition-colors duration-300 flex items-center">
                       <span className="mr-1">Hi, {getDisplayName()}</span>
                       <svg className="w-4 h-4 ml-1 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7 7" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
                     
@@ -251,18 +223,14 @@ const Navbar = () => {
             </button>
 
             {/* Menu Items */}
-            {sections.map((item) => (
+            {["Awards", "Cosplay", "Exhibit With Us", "Events"].map((item) => (
               <a
                 key={item}
                 href=""
-                className={`text-gray-300 hover:text-purple-400 transition-colors duration-300 font-medium ${
-                  pathname === '/' && activeSection === item
-                    ? 'text-yellow-400'
-                    : ''
-                }`}
+                className="text-gray-300 hover:text-purple-400 transition-colors duration-300 font-medium"
                 onClick={(e) => {
                   e.preventDefault();
-                  handleNavClick(item);
+                  handleScrollToSection(item);
                   setMobileMenuOpen(false);
                 }}
               >

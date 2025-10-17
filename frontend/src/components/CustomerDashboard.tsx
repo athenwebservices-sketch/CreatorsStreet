@@ -44,7 +44,18 @@ const CustomerDashboard = () => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+  // In CustomerDashboard.tsx, add this to the existing useEffect hooks
 
+useEffect(() => {
+  // Check for tab parameter in URL
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['dashboard', 'products', 'orders'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }
+}, []);
   useEffect(() => {
     // FIXED: Only run this effect on the client side
     if (!isMounted) return;

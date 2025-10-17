@@ -18,7 +18,7 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      {isClient && !hideNavFooter && <Navbar />}
+      {isClient && !hideNavFooter && <Navbar isHovering={isHovering} setIsHovering={setIsHovering} />}
       {children}
       {isClient && !hideNavFooter && <Footer isHovering={isHovering} setIsHovering={setIsHovering} />}
     </div>

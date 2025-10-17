@@ -32,7 +32,7 @@ const CustomerProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const { token } = useAuth();
-
+  
   // Memoize categories to avoid recreation on every render
   const categories = useMemo(() => 
     ['all', 'Apparel', 'Accessories', 'Tickets', 'Electronics', 'Collectibles'], 
@@ -64,7 +64,7 @@ const CustomerProducts = () => {
       }
       
       const response = await apiService.get(`${url}&Authorization=Bearer ${token}`);
-
+      console.log(token)
       
       // Handle different response formats
       const productsData = response.products || response.data || response;

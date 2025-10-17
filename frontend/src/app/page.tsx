@@ -179,7 +179,7 @@ export default function Home() {
       </div>
 
       {/* Navbar Component */}
-      <Navbar  />
+      <Navbar isHovering={isHovering} setIsHovering={setIsHovering} />
 
       {showButton && (
         <button

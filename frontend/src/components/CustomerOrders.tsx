@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/lib/api';
+import QRCode from 'react-qr-code';
 
 interface Order {
   _id: string;
@@ -27,6 +28,8 @@ const CustomerOrders = () => {
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 10, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const { user, token } = useAuth();
 
   const fetchOrders = async (page = 1) => {
@@ -123,6 +126,43 @@ const CustomerOrders = () => {
     if (pagination.page > 1) fetchOrders(pagination.page - 1);
   };
 
+  const openQrModal = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setQrModalOpen(true);
+  };
+
+  const closeQrModal = () => {
+    setQrModalOpen(false);
+    setSelectedOrderId(null);
+  };
+
+  const downloadQRCode = () => {
+    if (!selectedOrderId) return;
+    
+    const svg = document.getElementById('qr-code-svg');
+    if (!svg) return;
+    
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = function() {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      
+      const pngFile = canvas.toDataURL('image/png');
+      
+      const downloadLink = document.createElement('a');
+      downloadLink.download = `order-${selectedOrderId}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+    
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'completed':
@@ -187,6 +227,7 @@ const CustomerOrders = () => {
                       <th className="text-left py-3 px-4 text-white font-semibold">Total</th>
                       <th className="text-left py-3 px-4 text-white font-semibold">Payment</th>
                       <th className="text-left py-3 px-4 text-white font-semibold">Status</th>
+                      <th className="text-left py-3 px-4 text-white font-semibold">QR Code</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -211,6 +252,18 @@ const CustomerOrders = () => {
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
                             {order.status}
                           </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          {order.paymentStatus === 'pending' ? (
+                            <button
+                              onClick={() => openQrModal(order._id)}
+                              className="px-3 py-1 bg-yellow-400 text-black rounded text-sm font-medium hover:bg-yellow-300 transition-colors"
+                            >
+                              View QR
+                            </button>
+                          ) : (
+                            <span className="text-gray-400 text-sm">N/A</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -255,6 +308,45 @@ const CustomerOrders = () => {
           )}
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {qrModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Order QR Code</h2>
+              <button
+                onClick={closeQrModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="flex flex-col items-center">
+              <div className="bg-white p-4 rounded-lg mb-4">
+                <QRCode
+                  id="qr-code-svg"
+                  value={selectedOrderId || ''}
+                  size={200}
+                  level="H"
+                />
+              </div>
+              
+              <p className="text-gray-600 mb-4">Order ID: {selectedOrderId}</p>
+              
+              <button
+                onClick={downloadQRCode}
+                className="px-4 py-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-colors font-medium"
+              >
+                Download QR Code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

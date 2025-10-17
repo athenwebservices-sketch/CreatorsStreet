@@ -21,6 +21,7 @@ exports.protect = async (req, res, next) => {
 
     const decoded = jwt.verify(token, jwtConfig.secret);
     const user = await User.findById(decoded.id);
+    console.log(user)
     if (!user) return res.status(401).json({ message: 'Not authorized' });
 
     // server-side session sliding expiry: 1 hour since last used

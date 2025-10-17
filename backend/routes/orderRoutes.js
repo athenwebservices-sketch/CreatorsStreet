@@ -13,4 +13,5 @@ router.get('/:id/returns', requireApiKey, protect, ctrl.listReturns);
 router.put('/:id/returns/:returnId/approve', requireApiKey, protect, ctrl.approveReturn);
 router.put('/:id/returns/:returnId/reject', requireApiKey, protect, ctrl.rejectReturn);
 router.put('/:id/returns/:returnId/mark-received', requireApiKey, protect, ctrl.markReceived);
+router.put('/by-number/:orderNumber/status', requireApiKey, protect, ctrl.updateStatusByNumber);
 module.exports = router;
