@@ -46,7 +46,7 @@ app.use('/api/galleries', galleryRoutes);
 app.use('/api/admin', adminGalleryRoutes);
 app.use('/api/razorpay', razorpayRoutes);
 app.use('/api/gauth', googleLoginRoutes);
-
+app.use('/api/email', require('./routes/emailRoutes'));
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
