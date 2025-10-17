@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, CameraDevice } from 'html5-qrcode';
 import { useAuth } from '@/context/AuthContext';
 
 // Define a type for orders
@@ -33,7 +33,7 @@ const AdminQRReader = () => {
   const [error, setError] = useState<string | null>(null);
   const [cameraPermission, setCameraPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
   const [isInitialized, setIsInitialized] = useState(false);
-  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [cameras, setCameras] = useState<CameraDevice[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
   const [orderDetails, setOrderDetails] = useState<Order | null>(null);
@@ -94,13 +94,13 @@ const AdminQRReader = () => {
         }
       });
 
-      if (response.ok) {
-       const orderData = await response.json();
-      setOrderDetails(orderData);
-      setOrderStatus(orderData.status);
+      if (!response.ok) {
+        throw new Error('Failed to fetch order status');
       }
 
-     
+      const orderData = await response.json();
+      setOrderDetails(orderData);
+      setOrderStatus(orderData.status);
     } catch (err) {
       console.error('Error fetching order status:', err);
       setOrderStatus('Error fetching status');
@@ -297,6 +297,16 @@ const AdminQRReader = () => {
     }
   };
 
+  // Helper function to safely format date
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch (error) {
+      return 'Invalid Date';
+    }
+  };
+
   // Don't render until initialized
   if (!isMounted || !isInitialized) {
     return (
@@ -452,9 +462,7 @@ const AdminQRReader = () => {
                       <div className="flex justify-between">
                         <span className="text-gray-400">Date:</span>
                         <span className="text-white">
-                          {orderDetails.orderDate || orderDetails.createdAt || orderDetails.date
-                            ? new Date(orderDetails.orderDate || orderDetails.createdAt || orderDetails.date).toLocaleDateString()
-                            : 'N/A'}
+                          {formatDate(orderDetails.orderDate || orderDetails.createdAt || orderDetails.date)}
                         </span>
                       </div>
                       <div className="flex justify-between">
