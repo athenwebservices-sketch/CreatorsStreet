@@ -5,7 +5,6 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { apiService } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 import QRCode from 'qrcode';
 
 declare global {
@@ -19,7 +18,6 @@ interface RazorpayPaymentProps {
   onSuccess: (response: any) => void;
   onFailure: (error: any) => void;
   onDismiss: () => void;
-  redirectUrl?: string;
 }
 
 const QRModal = ({ orderId, onClose, error }: { 
@@ -146,14 +144,12 @@ const RazorpayPayment = ({
   product, 
   onSuccess, 
   onFailure, 
-  onDismiss, 
-  redirectUrl = '/customer-dashboard'
+  onDismiss
 }: RazorpayPaymentProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [orderId, setOrderId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
   const { token } = useAuth();
   const orderCreatedRef = useRef(false);
   const modalContainerRef = useRef<HTMLDivElement | null>(null);
@@ -211,8 +207,8 @@ const RazorpayPayment = ({
       clearTimeout(modalTimeoutRef.current);
       modalTimeoutRef.current = null;
     }
-    router.push(redirectUrl);
-  }, [router, redirectUrl]);
+    // Removed the redirect functionality
+  }, []);
 
   const showQRModalWithDelay = useCallback((finalOrderId: string, postPaymentError: string | null) => {
     // Clear any existing timeout

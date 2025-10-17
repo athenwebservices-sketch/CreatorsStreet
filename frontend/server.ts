@@ -31,13 +31,13 @@ async function createCustomServer() {
       
       // A helper function to parse cookies from the request header
       const parseCookies = (req: any) => {
-        const list = {};
+        const list: Record<string, string> = {}; // Fixed: Properly typed as Record<string, string>
         const rc = req.headers.cookie;
         rc && rc.split(';').forEach(function(cookie) {
           const parts = cookie.split('=');
           const key = parts.shift().trim();
           const value = decodeURI(parts.join('='));
-          (list as any)[key] = value;
+          list[key] = value;
         });
         return list;
       };
