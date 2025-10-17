@@ -29,8 +29,14 @@ exports.register = async (req, res, next) => {
         await sendMail({
           to: email,
           subject: 'Your OTP for Registration',
-          text: `Your OTP is: ${otp}`,
-          html: `<p>Your OTP is: <b>${otp}</b></p>`,
+          text: `Thank you for registering with CreatorsStreet.in. Please use the following One-Time Password (OTP) to verify your account and complete your registration process: ${otp}  This OTP is valid for the next 10 minutes. If you did not request this, please disregard this message.
+
+          Best regards,
+          The CreatorsStreet Team`,
+          html: `<p>Thank you for registering with CreatorsStreet.in. Please use the following One-Time Password (OTP) to verify your account and complete your registration process: ${otp}  This OTP is valid for the next 10 minutes. If you did not request this, please disregard this message.
+
+          Best regards,
+          The CreatorsStreet Team</p>`,
         });
         console.log('Registration OTP for', email, 'is:', otp);
         return res.status(200).json({
@@ -61,9 +67,15 @@ exports.register = async (req, res, next) => {
     await session.save();
     await sendMail({
       to: email,
-      subject: 'Your OTP for Registration',
-      text: `Your OTP is: ${otp}`,
-      html: `<p>Your OTP is: <b>${otp}</b></p>`,
+          subject: 'Your OTP for Registration',
+          text: `Thank you for registering with CreatorsStreet.in. Please use the following One-Time Password (OTP) to verify your account and complete your registration process: ${otp}  This OTP is valid for the next 10 minutes. If you did not request this, please disregard this message.
+
+          Best regards,
+          The CreatorsStreet Team`,
+          html: `<p>Thank you for registering with CreatorsStreet.in. Please use the following One-Time Password (OTP) to verify your account and complete your registration process: ${otp}  This OTP is valid for the next 10 minutes. If you did not request this, please disregard this message.
+
+          Best regards,
+          The CreatorsStreet Team</p>`,
     });
 
     console.log(`Registration OTP sent to ${email}`);
