@@ -6,21 +6,25 @@ const Awards = ({ isHovering, setIsHovering }) => {
       name: "Comics Awards 2025",
       link: "https://docs.google.com/forms/d/e/1FAIpQLSfwYAJwoOi7jWKvV2sW6z2TV80uoV4CU5OOiFmdXjsLlFDBEA/viewform?usp=header",
       color: "from-[#3c0052] to-[#3c0052]",
+      imageSeed: "/Awards.jpg"
     },
     {
       name: "Animation Awards 2025",
       link: "https://docs.google.com/forms/d/e/1FAIpQLSdhQ_ecD4jqbEpl25O4fa5PKUY7H6mNjcjoNicrKR2wOAcQBA/viewform?usp=header",
       color: "from-[#3c0052] to-[#3c0052]",
+      imageSeed:"/Awards.jpg"
     },
     {
       name: "Gaming Awards 2025",
       link: "https://docs.google.com/forms/d/e/1FAIpQLSdhQ_ecD4jqbEpl25O4fa5PKUY7H6mNjcjoNicrKR2wOAcQBA/viewform?usp=header",
       color: "from-[#3c0052] to-[#3c0052]",
+      imageSeed: "/Awards.jpg"
     },
     {
       name: "Special Carogery Awards 2025",
       link: "https://docs.google.com/forms/d/e/1FAIpQLSdWxEblCh_nEGUJ5HSefC70Q0aigC_yGUo7WHDcQDPHbUeLFg/viewform?usp=header",
       color: "from-[#3c0052] to-[#3c0052]",
+      imageSeed: "/Awards.jpg"
     }
   ];
 
@@ -51,19 +55,31 @@ const Awards = ({ isHovering, setIsHovering }) => {
               />
 
               {/* Content */}
-              <div className="relative z-20 p-6 text-center flex flex-col justify-between h-full">
-                {/* Title */}
-                <h3 className="text-2xl font-semibold text-white mb-3 drop-shadow-md">
-                  {award.name}
-                </h3>
+              <div className="relative z-20 flex flex-col h-full">
+                {/* Image Placeholder */}
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={award.imageSeed}
+                    alt={award.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#3c0052]/70 to-transparent"></div>
+                </div>
 
-                {/* Button */}
-                <a
-                  href={award.link}
-                  className="inline-block px-5 py-2 mt-2 text-sm font-semibold text-yellow-300 border border-yellow-400 rounded-full shadow-md hover:bg-yellow-400 hover:text-indigo-900 transition-all duration-300 relative z-30"
-                >
-                  Register Now→
-                </a>
+                <div className="p-6 text-center flex flex-col justify-between flex-grow">
+                  {/* Title */}
+                  <h3 className="text-2xl font-semibold text-white mb-3 drop-shadow-md">
+                    {award.name}
+                  </h3>
+
+                  {/* Button */}
+                  <a
+                    href={award.link}
+                    className="inline-block px-5 py-2 mt-2 text-sm font-semibold text-yellow-300 border border-yellow-400 rounded-full shadow-md hover:bg-yellow-400 hover:text-indigo-900 transition-all duration-300 relative z-30"
+                  >
+                    Register Now→
+                  </a>
+                </div>
               </div>
 
               {/* Bottom Accent */}

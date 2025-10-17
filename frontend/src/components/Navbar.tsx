@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { FaInstagram, FaFacebookF } from 'react-icons/fa';
 import { FaLinkedinIn } from 'react-icons/fa';
 import { FaBars, FaTimes } from 'react-icons/fa';
@@ -14,6 +14,7 @@ const Navbar = ({ isHovering, setIsHovering }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
+  const router = useRouter(); // Add router for explicit navigation
   const sections = ["Awards", "Cosplay", "Exhibit With Us", "Events"];
 
   const handleCloseMenu = (e) => {
@@ -44,7 +45,7 @@ const Navbar = ({ isHovering, setIsHovering }) => {
   // Extract user's first name from email or use the full email if no name is available
   const getDisplayName = () => {
     if (!user) return '';
-    
+    console.log(user)
     // If user has a name property, use it
     if (user.name) return user.name.split(' ')[0];
     
@@ -55,6 +56,12 @@ const Navbar = ({ isHovering, setIsHovering }) => {
     }
     
     return user.email;
+  };
+
+  // Function to handle navigation to login/register
+  const handleNavigation = (path) => {
+    router.push(path);
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -172,19 +179,19 @@ const Navbar = ({ isHovering, setIsHovering }) => {
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/login"
+                  <button
+                    onClick={() => handleNavigation('/login')}
                     className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 rounded-full transition-colors duration-300"
                   >
                     Login
-                  </Link>
+                  </button>
                   
-                  <Link
-                    href="/register"
+                  <button
+                    onClick={() => handleNavigation('/register')}
                     className="bg-transparent hover:bg-white/10 text-white font-semibold py-2 px-5 rounded-full border border-white/30 transition-colors duration-300"
                   >
                     Register
-                  </Link>
+                  </button>
                 </>
               )}
               
@@ -252,27 +259,24 @@ const Navbar = ({ isHovering, setIsHovering }) => {
                   <div className="text-white font-medium py-2">
                     Hi, {getDisplayName()}
                   </div>
-                  <Link
-                    href={user?.role === 'admin' ? '/admin-dashboard' : '/customer-dashboard'}
+                  <button
+                    onClick={() => handleNavigation(user?.role === 'admin' ? '/admin-dashboard' : '/customer-dashboard')}
                     className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 rounded-full transition-colors duration-300 text-center"
-                    onClick={() => setMobileMenuOpen(false)}
                   >
                     Dashboard
-                  </Link>
-                  <Link
-                    href="/customer-dashboard/products"
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('/customer-dashboard/products')}
                     className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 rounded-full transition-colors duration-300 text-center"
-                    onClick={() => setMobileMenuOpen(false)}
                   >
                     Browse Products
-                  </Link>
-                  <Link
-                    href="/customer-dashboard/orders"
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('/customer-dashboard/orders')}
                     className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 rounded-full transition-colors duration-300 text-center"
-                    onClick={() => setMobileMenuOpen(false)}
                   >
                     My Orders
-                  </Link>
+                  </button>
                   <button
                     onClick={handleLogout}
                     className="bg-transparent hover:bg-white/10 text-white font-semibold py-2 px-5 rounded-full border border-white/30 transition-colors duration-300 text-center"
@@ -282,21 +286,19 @@ const Navbar = ({ isHovering, setIsHovering }) => {
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/login"
+                  <button
+                    onClick={() => handleNavigation('/login')}
                     className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 rounded-full transition-colors duration-300 text-center"
-                    onClick={() => setMobileMenuOpen(false)}
                   >
                     Login
-                  </Link>
+                  </button>
                   
-                  <Link
-                    href="/register"
+                  <button
+                    onClick={() => handleNavigation('/register')}
                     className="bg-transparent hover:bg-white/10 text-white font-semibold py-2 px-5 rounded-full border border-white/30 transition-colors duration-300 text-center"
-                    onClick={() => setMobileMenuOpen(false)}
                   >
                     Register
-                  </Link>
+                  </button>
                 </>
               )}
             </div>

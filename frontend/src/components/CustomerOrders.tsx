@@ -7,13 +7,16 @@ import { apiService } from '@/lib/api';
 import QRCode from 'react-qr-code';
 
 interface Order {
-  _id: string;
-  total: number;
-  totalAmount?: number;
+  orderNumber: string;
+  orderDate: string;
+  paymentStatus: string;
+  shippingCost: number;
   status: string;
-  createdAt: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  userId: string;
   items?: any[];
-  paymentStatus?: string;
   shippingAddress?: any;
 }
 
@@ -42,7 +45,7 @@ const CustomerOrders = () => {
       // Handle different response formats
       const ordersData = response.orders || response.data || response;
       const newOrders = Array.isArray(ordersData) ? ordersData : [];
-      
+      console.log(ordersData)
       setOrders(newOrders);
       setPagination({
         page: response.page || page,
@@ -51,18 +54,22 @@ const CustomerOrders = () => {
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch orders');
-      // Use mock data as fallback
+      // Use mock data as fallback with updated structure
       const mockOrders: Order[] = [
         { 
-          _id: 'ORD001', 
-          total: 1299, 
-          status: 'completed', 
-          createdAt: '2023-11-15T10:00:00Z',
+          orderNumber: 'ORD-1760691171458-G352', 
+          orderDate: '2025-10-17T08:52:51.459Z',
+          paymentStatus: 'pending',
+          shippingCost: 0,
+          status: 'paid',
+          subtotal: 899,
+          taxAmount: 0,
+          totalAmount: 899,
+          userId: '68f1f7975e48f039d902b5b2',
           items: [
             { name: 'Creators Street T-Shirt', quantity: 2, price: 599 },
             { name: 'Creators Street Cap', quantity: 1, price: 399 }
           ],
-          paymentStatus: 'paid',
           shippingAddress: {
             name: 'John Doe',
             street: '123 Main St',
@@ -72,14 +79,18 @@ const CustomerOrders = () => {
           }
         },
         { 
-          _id: 'ORD002', 
-          total: 999, 
-          status: 'processing', 
-          createdAt: '2023-11-14T15:30:00Z',
+          orderNumber: 'ORD-1760691171459-G353', 
+          orderDate: '2025-10-16T15:30:00Z',
+          paymentStatus: 'paid',
+          shippingCost: 50,
+          status: 'processing',
+          subtotal: 999,
+          taxAmount: 50,
+          totalAmount: 1099,
+          userId: '68f1f7975e48f039d902b5b2',
           items: [
             { name: 'Event Pass - General', quantity: 1, price: 999 }
           ],
-          paymentStatus: 'paid',
           shippingAddress: {
             name: 'John Doe',
             street: '123 Main St',
@@ -89,14 +100,18 @@ const CustomerOrders = () => {
           }
         },
         { 
-          _id: 'ORD003', 
-          total: 2499, 
-          status: 'pending', 
-          createdAt: '2023-11-13T09:15:00Z',
+          orderNumber: 'ORD-1760691171460-G354', 
+          orderDate: '2025-10-15T09:15:00Z',
+          paymentStatus: 'paid',
+          shippingCost: 100,
+          status: 'pending',
+          subtotal: 2499,
+          taxAmount: 125,
+          totalAmount: 2724,
+          userId: '68f1f7975e48f039d902b5b2',
           items: [
             { name: 'Event Pass - VIP', quantity: 1, price: 2499 }
           ],
-          paymentStatus: 'paid',
           shippingAddress: {
             name: 'John Doe',
             street: '123 Main St',
@@ -191,6 +206,18 @@ const CustomerOrders = () => {
     }
   };
 
+  // Format date function
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#3c0052] flex items-center justify-center">
@@ -232,20 +259,20 @@ const CustomerOrders = () => {
                   </thead>
                   <tbody>
                     {orders.map((order) => (
-                      <tr key={order._id} className="border-b border-white/10 hover:bg-white/5">
-                        <td className="py-3 px-4 text-white">#{order._id}</td>
+                      <tr key={order.orderNumber} className="border-b border-white/10 hover:bg-white/5">
+                        <td className="py-3 px-4 text-white">#{order.orderNumber}</td>
                         <td className="py-3 px-4 text-white">
-                          {new Date(order.createdAt).toLocaleDateString()}
+                          {formatDate(order.orderDate)}
                         </td>
                         <td className="py-3 px-4 text-white">
                           {order.items ? order.items.length : 1} item{order.items && order.items.length > 1 ? 's' : ''}
                         </td>
                         <td className="py-3 px-4 text-white">
-                          ₹{(order.total || order.totalAmount || 0).toLocaleString()}
+                          ₹{order.totalAmount.toLocaleString()}
                         </td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPaymentStatusColor(order.paymentStatus)}`}>
-                            {order.paymentStatus || 'N/A'}
+                            {order.paymentStatus}
                           </span>
                         </td>
                         <td className="py-3 px-4">
@@ -256,7 +283,7 @@ const CustomerOrders = () => {
                         <td className="py-3 px-4">
                           {order.paymentStatus === 'pending' ? (
                             <button
-                              onClick={() => openQrModal(order._id)}
+                              onClick={() => openQrModal(order.orderNumber)}
                               className="px-3 py-1 bg-yellow-400 text-black rounded text-sm font-medium hover:bg-yellow-300 transition-colors"
                             >
                               View QR

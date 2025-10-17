@@ -36,24 +36,28 @@ const Register = () => {
 
   const handleOtpChange = (e) => {
     const { name, value } = e.target;
-    setOtpData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+
+    // Make sure to allow only numbers (if needed) and limit length to 6
+    if (/^\d{0,6}$/.test(value)) {
+      setOtpData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
       return;
     }
-    
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: 'POST',
@@ -69,7 +73,7 @@ const Register = () => {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Registration failed');
       }
@@ -81,10 +85,10 @@ const Register = () => {
       });
       setOtpSent(true);
       setStep(2);
-      
+
       // Start resend timer
       startResendTimer();
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {
@@ -96,7 +100,7 @@ const Register = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify-otp`, {
         method: 'POST',
@@ -112,7 +116,7 @@ const Register = () => {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'OTP verification failed');
       }
@@ -120,7 +124,7 @@ const Register = () => {
       // Handle successful OTP verification
       // Login the user with the received token
       await login(formData.email, formData.password);
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'OTP verification failed. Please try again.');
     } finally {
@@ -130,10 +134,10 @@ const Register = () => {
 
   const handleResendOtp = async () => {
     if (resendDisabled) return;
-    
+
     setResendDisabled(true);
     setError('');
-    
+
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: 'POST',
@@ -149,7 +153,7 @@ const Register = () => {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to resend OTP');
       }
@@ -159,10 +163,10 @@ const Register = () => {
         sessionToken: data.sessionToken,
         otp: data.otp
       });
-      
+
       setError('OTP has been resent to your email');
       startResendTimer();
-      
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resend OTP');
       setResendDisabled(false);
@@ -172,11 +176,11 @@ const Register = () => {
   const startResendTimer = () => {
     setResendDisabled(true);
     let timeLeft = 30;
-    
+
     const timer = setInterval(() => {
       timeLeft--;
       setResendTimer(timeLeft);
-      
+
       if (timeLeft <= 0) {
         clearInterval(timer);
         setResendDisabled(false);
@@ -194,13 +198,13 @@ const Register = () => {
                 <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
                 <p className="text-gray-300">Join us today</p>
               </div>
-              
+
               {error && (
                 <div className="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mb-6">
                   {error}
                 </div>
               )}
-              
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
@@ -217,7 +221,7 @@ const Register = () => {
                     placeholder="Name"
                   />
                 </div>
-                
+
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
                     Email
@@ -233,7 +237,7 @@ const Register = () => {
                     placeholder="your@email.com"
                   />
                 </div>
-                
+
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
                     Password
@@ -249,7 +253,7 @@ const Register = () => {
                     placeholder="•••••••••"
                   />
                 </div>
-                
+
                 <div>
                   <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
                     Confirm Password
@@ -265,7 +269,7 @@ const Register = () => {
                     placeholder="•••••••••"
                   />
                 </div>
-                
+
                 <div className="flex items-center">
                   <input
                     id="agree-terms"
@@ -281,7 +285,7 @@ const Register = () => {
                     </a>
                   </label>
                 </div>
-                
+
                 <div>
                   <button
                     type="submit"
@@ -292,7 +296,7 @@ const Register = () => {
                   </button>
                 </div>
               </form>
-              
+
               <div className="mt-6 text-center">
                 <p className="text-gray-300">
                   Already have an account?{' '}
@@ -308,19 +312,19 @@ const Register = () => {
                 <h1 className="text-3xl font-bold text-white mb-2">Verify Your Email</h1>
                 <p className="text-gray-300">We've sent an OTP to {formData.email}</p>
               </div>
-              
+
               {error && (
                 <div className="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg mb-6">
                   {error}
                 </div>
               )}
-              
+
               {otpSent && (
                 <div className="bg-green-500/20 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg mb-6">
                   OTP has been sent to your email
                 </div>
               )}
-              
+
               <form onSubmit={handleOtpSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="otp" className="block text-sm font-medium text-gray-300 mb-2">
@@ -330,15 +334,15 @@ const Register = () => {
                     type="text"
                     id="otp"
                     name="otp"
-                    value=""
+                    value={otpData.otp}  // Connect to the state
                     onChange={handleOtpChange}
                     required
                     maxLength={6}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-center text-lg"
-                    placeholder="OTP"
+                    placeholder="Only Numbers"
                   />
                 </div>
-                
+
                 <div>
                   <button
                     type="submit"
@@ -348,7 +352,7 @@ const Register = () => {
                     {loading ? 'Verifying...' : 'Verify OTP'}
                   </button>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
@@ -357,15 +361,15 @@ const Register = () => {
                   >
                     Back to registration
                   </button>
-                  
+
                   <button
                     type="button"
                     onClick={handleResendOtp}
                     disabled={resendDisabled}
                     className="text-sm text-gray-300 hover:text-yellow-300 disabled:text-gray-500 disabled:cursor-not-allowed"
                   >
-                    {resendDisabled 
-                      ? `Resend OTP (${resendTimer}s)` 
+                    {resendDisabled
+                      ? `Resend OTP (${resendTimer}s)`
                       : 'Resend OTP'
                     }
                   </button>
@@ -373,7 +377,7 @@ const Register = () => {
               </form>
             </>
           )}
-          
+
           {/* <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
