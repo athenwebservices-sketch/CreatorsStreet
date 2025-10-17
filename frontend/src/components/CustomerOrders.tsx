@@ -7,6 +7,7 @@ import { apiService } from '@/lib/api';
 import QRCode from 'react-qr-code';
 
 interface Order {
+  _id: string; // Added _id field
   orderNumber: string;
   orderDate: string;
   paymentStatus: string;
@@ -41,7 +42,7 @@ const CustomerOrders = () => {
     try {
       // Updated to use the correct endpoint - backend will handle user-specific orders
       const response = await apiService.get(`/api/orders?page=${page}`);
-      
+      console.log(response)
       // Handle different response formats
       const ordersData = response.orders || response.data || response;
       const newOrders = Array.isArray(ordersData) ? ordersData : [];
@@ -57,6 +58,7 @@ const CustomerOrders = () => {
       // Use mock data as fallback with updated structure
       const mockOrders: Order[] = [
         { 
+          _id: '68f1f7975e48f039d902b5b2', // Added _id to mock data
           orderNumber: 'ORD-1760691171458-G352', 
           orderDate: '2025-10-17T08:52:51.459Z',
           paymentStatus: 'pending',
@@ -78,48 +80,8 @@ const CustomerOrders = () => {
             pincode: '500001'
           }
         },
-        { 
-          orderNumber: 'ORD-1760691171459-G353', 
-          orderDate: '2025-10-16T15:30:00Z',
-          paymentStatus: 'paid',
-          shippingCost: 50,
-          status: 'processing',
-          subtotal: 999,
-          taxAmount: 50,
-          totalAmount: 1099,
-          userId: '68f1f7975e48f039d902b5b2',
-          items: [
-            { name: 'Event Pass - General', quantity: 1, price: 999 }
-          ],
-          shippingAddress: {
-            name: 'John Doe',
-            street: '123 Main St',
-            city: 'Hyderabad',
-            state: 'Telangana',
-            pincode: '500001'
-          }
-        },
-        { 
-          orderNumber: 'ORD-1760691171460-G354', 
-          orderDate: '2025-10-15T09:15:00Z',
-          paymentStatus: 'paid',
-          shippingCost: 100,
-          status: 'pending',
-          subtotal: 2499,
-          taxAmount: 125,
-          totalAmount: 2724,
-          userId: '68f1f7975e48f039d902b5b2',
-          items: [
-            { name: 'Event Pass - VIP', quantity: 1, price: 2499 }
-          ],
-          shippingAddress: {
-            name: 'John Doe',
-            street: '123 Main St',
-            city: 'Hyderabad',
-            state: 'Telangana',
-            pincode: '500001'
-          }
-        },
+        
+        
       ];
       setOrders(mockOrders);
       setPagination({ page: 1, limit: 10, total: mockOrders.length });
@@ -142,6 +104,7 @@ const CustomerOrders = () => {
   };
 
   const openQrModal = (orderId: string) => {
+    
     setSelectedOrderId(orderId);
     setQrModalOpen(true);
   };
@@ -258,7 +221,7 @@ const CustomerOrders = () => {
                   </thead>
                   <tbody>
                     {orders.map((order) => (
-                      <tr key={order.orderNumber} className="border-b border-white/10 hover:bg-white/5">
+                      <tr key={order._id} className="border-b border-white/10 hover:bg-white/5">
                         <td className="py-3 px-4 text-white">#{order.orderNumber}</td>
                         <td className="py-3 px-4 text-white">
                           {formatDate(order.orderDate)}
@@ -277,7 +240,7 @@ const CustomerOrders = () => {
                         <td className="py-3 px-4">
                           {order.status.toLowerCase() === 'paid' ? (
                             <button
-                              onClick={() => openQrModal(order.orderNumber)}
+                              onClick={() => openQrModal(order._id)} // Changed from orderNumber to _id
                               className="px-3 py-1 bg-yellow-400 text-black rounded text-sm font-medium hover:bg-yellow-300 transition-colors"
                             >
                               View QR
