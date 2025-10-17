@@ -34,7 +34,7 @@ const AdminDashboard = () => {
     // Check if token exists
     if (!token) return;
     setLoading(true);
-    
+    console.log(user)
     // Fetch all data in parallel for performance
     const fetchStats = async () => {
       try {
@@ -262,30 +262,37 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-black/50 backdrop-blur-sm border-b border-white/10">
+      {/* Navigation Tabs - Updated for mobile scrolling */}
+      <div className="bg-black/50 backdrop-blur-sm border-b border-white/10 relative">
+        {/* Scroll indicator for left side */}
+        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#3c0052] to-transparent z-10 pointer-events-none md:hidden"></div>
+        {/* Scroll indicator for right side */}
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#3c0052] to-transparent z-10 pointer-events-none md:hidden"></div>
+        
         <div className="container mx-auto px-4">
-          <div className="flex space-x-1">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-              { id: 'orders', label: 'Orders', icon: '📦' },
-              { id: 'products', label: 'Products', icon: '🛍️' },
-              { id: 'users', label: 'Users', icon: '👥' },
-              { id: 'qr-reader', label: 'QR Scanner', icon: '📷' }, // Add QR Scanner tab
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 font-medium transition-colors border-b-2 ${
-                  activeTab === tab.id
-                    ? 'text-yellow-400 border-yellow-400'
-                    : 'text-gray-300 border-transparent hover:text-white hover:border-white/30'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
+          <div className="overflow-x-auto scrollbar-hide md:overflow-visible">
+            <div className="flex space-x-1 min-w-max md:min-w-0 md:flex md:space-x-1">
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+                { id: 'orders', label: 'Orders', icon: '📦' },
+                { id: 'products', label: 'Products', icon: '🛍️' },
+                { id: 'users', label: 'Users', icon: '👥' },
+                { id: 'qr-reader', label: 'QR Scanner', icon: '📷' }, // Add QR Scanner tab
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-6 py-3 font-medium transition-colors border-b-2 whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'text-yellow-400 border-yellow-400'
+                      : 'text-gray-300 border-transparent hover:text-white hover:border-white/30'
+                  }`}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
