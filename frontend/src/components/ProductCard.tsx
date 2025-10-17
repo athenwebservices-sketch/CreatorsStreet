@@ -36,7 +36,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [postPaymentError, setPostPaymentError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
+  console.log("test")
   // Show notification helper
   const showNotificationMessage = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setNotificationMessage(message);
