@@ -58,7 +58,7 @@ exports.updateStatusByNumber = async (req, res, next) => {
     
     if(status==='paid') {
       // Generate QR code for the order
-      const qrCodeDataUrl = await QRCode.toDataURL(order.orderNumber, {
+      const qrCodeDataUrl = await QRCode.toDataURL(order._id, {
         width: 200,
         margin: 2,
         color: {

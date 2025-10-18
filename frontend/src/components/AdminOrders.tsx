@@ -228,7 +228,7 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ initialData }) => {
               Search
             </button>
           </div>
-          <select
+          {/* <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-yellow-400"
@@ -239,7 +239,7 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ initialData }) => {
             <option value="shipped">Shipped</option>
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
-          </select>
+          </select> */}
         </div>
       </div>
 

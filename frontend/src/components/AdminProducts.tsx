@@ -122,7 +122,7 @@ const AdminProducts = () => {
                   <tr key={product._id} className="border-b border-white/10 hover:bg-white/5">
                     <td className="py-3 px-4 text-white">#{product._id}</td>
                     <td className="py-3 px-4 text-white font-medium">{product.name}</td>
-                    <td className="py-3 px-4 text-white">${product.price.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-white">{product.price.toLocaleString()}</td>
                     <td className={`py-3 px-4 font-semibold ${getStockColor(product.stock)}`}>
                       {product.stock}
                     </td>

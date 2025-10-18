@@ -447,7 +447,7 @@ const AdminQRReader = () => {
           <div className="space-y-4">
             {orderDetails.items.map((item, index) => (
               <div key={index} className="bg-black/30 rounded-xl p-4 flex items-center space-x-4">
-                <div className="w-20 h-20 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 border border-gray-600">
+                {/* <div className="w-20 h-20 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 border border-gray-600">
                   {item.productImage ? (
                     <img 
                       src={item.productImage} 
@@ -461,7 +461,7 @@ const AdminQRReader = () => {
                       </svg>
                     </div>
                   )}
-                </div>
+                </div> */}
                 
                 <div className="flex-1">
                   <h4 className="text-white font-semibold text-lg mb-1">
