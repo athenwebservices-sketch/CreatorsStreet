@@ -2,6 +2,8 @@ const Order = require('../models/orderModel');
 const Product = require('../models/productModel');
 const Shipment = require('../models/shipmentModel');
 const ReturnModel = require('../models/returnModel');
+const sendMail = require('../config/mailConfig');
+
 
 function generateOrderNumber(){ return 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2,4).toUpperCase(); }
 
@@ -52,6 +54,17 @@ exports.updateStatusByNumber = async (req, res, next) => {
     const { status } = req.body;
     if (!status) {
         return res.status(400).json({ message: 'Status is required in the request body' });
+    }
+    if(status==='paid') {
+      req.user.email
+      sendMail({
+        to: req.user.email,
+        subject: 'Order Payment Confirmation', 
+        html: `<p>Dear ${req.user.firstName || 'Customer'},</p>
+               <p>We are pleased to inform you that your payment for order <strong>${order.orderNumber}</strong> has been successfully processed.</p>
+               <p>Thank you for shopping with us!</p>
+               <p>Best regards,<br/>CreatorsStreet.in Team</p>`
+      });
     }
 
     // NOTE: You might want to add business logic here to restrict

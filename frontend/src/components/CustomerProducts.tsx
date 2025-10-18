@@ -465,13 +465,13 @@ const CustomerProducts = () => {
       )}
 
       {/* QR Modal */}
-      {showQRModal && (
+      {/* {showQRModal && (
         <QRModal 
           orderId={orderId} 
           onClose={handleCloseQRModal} 
           error={paymentError}
         />
-      )}
+      )} */}
     </div>
   );
 };
