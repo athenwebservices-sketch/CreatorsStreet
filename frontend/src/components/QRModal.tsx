@@ -1,10 +1,11 @@
 // components/QRModal.tsx
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/lib/api';
+
 interface QRModalProps {
   orderId: string;
   onClose: () => void;
@@ -16,57 +17,11 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(true);
   const [qrError, setQrError] = useState<string | null>(null);
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
-
-  // Function to send the confirmation email
-  const sendConfirmationEmail = async (qrCodeDataUrl: string) => {
-    if (!user?.email || emailSent) return;
-    
-    try {
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #3c0052;">Payment Confirmation</h2>
-          <p>Thank you for your purchase.</p>
-          <p>Your payment has been successfully processed. Please find your order details below:</p>
-          
-          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Order Details</h3>
-            <p><strong>Order ID:</strong> ${orderId}</p>
-            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-          </div>
-          
-          <div style="text-align: center; margin: 20px 0;">
-            <h3>Your Order QR Code</h3>
-            <p>Please save this QR code for your records. You may need to show it when collecting your order.</p>
-            <img src="${qrCodeDataUrl}" alt="Order QR Code" style="max-width: 200px; margin: 10px auto; display: block;" />
-          </div>
-          
-          <p style="font-size: 12px; color: #666; margin-top: 30px;">
-            This is an automated message. Please do not reply to this email.
-          </p>
-        </div>
-      `;
-
-      // Use the apiService to send the email
-      // await apiService.post('/api/email', {
-      //   to: user.email,
-      //   subject: `Order Confirmation - ${orderId}`,
-      //   html: emailHtml,
-      // });
-      
-      setEmailSent(true);
-      console.log('QRModal: Confirmation email sent successfully');
-    } catch (err) {
-      console.error('QRModal: Failed to send confirmation email:', err);
-      setEmailError(err instanceof Error ? err.message : 'Failed to send confirmation email');
-    }
-  };
 
   useEffect(() => {
     // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
-    
+
     return () => {
       document.body.style.overflow = '';
     };
@@ -95,12 +50,9 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
           },
           errorCorrectionLevel: 'L'
         });
-        
+
         setQrDataUrl(url);
         console.log('QRModal: QR code generated successfully');
-        
-        // Send email with the generated QR code
-        await sendConfirmationEmail(url);
       } catch (err) {
         console.error('QRModal: QR code generation failed:', err);
         setQrError('Failed to generate QR code. Please try again.');
@@ -137,7 +89,7 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
     setQrDataUrl('');
     setQrError(null);
     setIsGenerating(true);
-    
+
     // Force regeneration
     setTimeout(async () => {
       if (orderId) {
@@ -151,12 +103,9 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
             },
             errorCorrectionLevel: 'L'
           });
-          
+
           setQrDataUrl(url);
           console.log('QRModal: Retry successful');
-          
-          // Send email with the regenerated QR code
-          await sendConfirmationEmail(url);
         } catch (err) {
           setQrError(err instanceof Error ? err.message : 'Failed to generate QR code');
         } finally {
@@ -164,14 +113,6 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
         }
       }
     }, 100);
-  };
-
-  // Function to manually resend the email
-  const handleResendEmail = async () => {
-    if (!qrDataUrl) return;
-    
-    setEmailError(null);
-    await sendConfirmationEmail(qrDataUrl);
   };
 
   return (
@@ -191,19 +132,19 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
             </svg>
           </button>
         </div>
-        
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p className="text-sm">There was an issue updating your order, but your payment was successful.</p>
             <p className="text-xs mt-1">Error: {error}</p>
           </div>
         )}
-        
+
         <div className="text-center mb-4">
           <p className="text-green-600 font-medium mb-2">Your payment has been processed successfully.</p>
           <p className="text-gray-600 text-sm mb-4">Please save this QR code for your records.</p>
         </div>
-        
+
         <div className="flex flex-col items-center">
           <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
             {isGenerating ? (
@@ -225,9 +166,9 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
                 </button>
               </div>
             ) : qrDataUrl ? (
-              <img 
-                src={qrDataUrl} 
-                alt="Order QR Code" 
+              <img
+                src={qrDataUrl}
+                alt="Order QR Code"
                 className="w-[200px] h-[200px] block"
                 onError={(e) => {
                   console.error('QRModal: Image failed to load');
@@ -244,28 +185,11 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
               </div>
             )}
           </div>
-          
-          <p className="text-gray-600 mb-2">Order ID: {orderId || 'Loading...'}</p>
-          
-          {/* Email status notification */}
-          {emailSent && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded mb-2 text-sm w-full">
-              <p>Confirmation email sent to {user?.email}</p>
-            </div>
-          )}
-          
-          {emailError && (
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 py-2 rounded mb-2 text-sm w-full">
-              <p>Failed to send email: {emailError}</p>
-              <button 
-                onClick={handleResendEmail}
-                className="mt-1 text-blue-600 underline text-xs"
-              >
-                Try again
-              </button>
-            </div>
-          )}
-          
+
+          <p className="text-gray-600 mb-4">Order ID: {orderId || 'Loading...'}</p>
+          <div className="bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded mb-2 text-sm w-full">
+            <p>Confirmation email sent to {user?.email}</p>
+          </div>
           <div className="flex gap-3">
             <button
               onClick={handleDownload}
@@ -287,4 +211,4 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
   );
 };
 
-export default QRModal; 
+export default QRModal;

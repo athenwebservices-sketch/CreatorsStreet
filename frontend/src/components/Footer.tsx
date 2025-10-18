@@ -71,7 +71,7 @@ const Footer = ({ isHovering, setIsHovering }) => {
           <div>
             <h4 className="text-lg font-semibold text-white mb-4">Contact</h4>
             <div className="space-y-2 text-gray-400 text-sm">
-              <p>Email: contact@forbiddenverse.world</p>
+              <p>Email: info@creatorsstreet.in</p>
             </div>
           </div>
         </div>

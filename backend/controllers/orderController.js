@@ -3,7 +3,7 @@ const Product = require('../models/productModel');
 const Shipment = require('../models/shipmentModel');
 const ReturnModel = require('../models/returnModel');
 const sendMail = require('../config/mailConfig');
-
+const QRCode = require('qrcode'); // Add this import
 
 function generateOrderNumber(){ return 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2,4).toUpperCase(); }
 
@@ -55,15 +55,43 @@ exports.updateStatusByNumber = async (req, res, next) => {
     if (!status) {
         return res.status(400).json({ message: 'Status is required in the request body' });
     }
+    
     if(status==='paid') {
-      req.user.email
+      // Generate QR code for the order
+      const qrCodeDataUrl = await QRCode.toDataURL(order.orderNumber, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#3c0052',
+          light: '#FFFFFF'
+        }
+      });
+      
       sendMail({
         to: req.user.email,
         subject: 'Order Payment Confirmation', 
-        html: `<p>Dear ${req.user.firstName || 'Customer'},</p>
-               <p>We are pleased to inform you that your payment for order <strong>${order.orderNumber}</strong> has been successfully processed.</p>
-               <p>Thank you for shopping with us!</p>
-               <p>Best regards,<br/>CreatorsStreet.in Team</p>`
+        html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #3c0052;">Payment Confirmation</h2>
+          <p>Thank you for your purchase.</p>
+          <p>Your payment has been successfully processed. Please find your order details below:</p>
+          
+          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Order Details</h3>
+            <p><strong>Order ID:</strong> ${order.orderNumber}</p>
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Total Amount:</strong> ${order.currency} ${order.totalAmount}</p>
+          </div>
+          
+          <div style="text-align: center; margin: 20px 0;">
+            <h3>Your Order QR Code</h3>
+            <p>Please save this QR code for your records. You may need to show it when collecting your order.</p>
+            <img src="${qrCodeDataUrl}" alt="Order QR Code" style="max-width: 200px; margin: 10px auto; display: block;" />
+          </div>
+          
+          <p style="font-size: 12px; color: #666; margin-top: 30px;">
+            This is an automated message. Please do not reply to this email.
+          </p>
+        </div>`
       });
     }
 
@@ -110,7 +138,6 @@ exports.list = async (req, res, next) => {
     next(e);
   }
 };
-
 
 exports.get = async (req,res,next)=>{
   try{ const order = await Order.findById(req.params.id); if(!order) return res.status(404).end(); if(req.user.role==='customer' && order.userId.toString()!==req.user._id.toString()) return res.status(403).end(); res.json(order);}catch(e){next(e)}
