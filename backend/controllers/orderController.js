@@ -2,7 +2,8 @@ const Order = require('../models/orderModel');
 const Product = require('../models/productModel');
 const Shipment = require('../models/shipmentModel');
 const ReturnModel = require('../models/returnModel');
-
+const sendMail = require('../config/mailConfig');
+const QRCode = require('qrcode');
 function generateOrderNumber(){ return 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2,4).toUpperCase(); }
 
 exports.createOrder = async (req,res,next)=>{
@@ -25,6 +26,7 @@ exports.createOrder = async (req,res,next)=>{
   }catch(e){next(e)}
 };
 
+
 exports.updateStatusByNumber = async (req, res, next) => {
   try {
     const { orderNumber } = req.params;
@@ -32,42 +34,74 @@ exports.updateStatusByNumber = async (req, res, next) => {
       return res.status(400).json({ message: 'Order number is required' });
     }
 
-    // Find the order by its unique orderNumber
     const order = await Order.findOne({ orderNumber: orderNumber });
-
     if (!order) {
       return res.status(404).json({ message: 'Order not found with that number' });
     }
 
-    // --- REVISED PERMISSION CHECK ---
-    // If the user is a customer, ensure they own the order.
-    // If the user is an admin (or other non-customer role), they are allowed.
-    console.log(order.userId.toString())
-    console.log(req.user._id.toString())
     if (req.user.role === 'customer' && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this order' });
     }
 
-    // Update the status from the request body
     const { status } = req.body;
     if (!status) {
         return res.status(400).json({ message: 'Status is required in the request body' });
     }
-
-    // NOTE: You might want to add business logic here to restrict
-    // which statuses a customer can set (e.g., they can only set it to 'cancelled').
-    // For now, this allows any status update for the owner or an admin.
+    
     order.status = status;
-
     await order.save();
 
-    // Return the updated order as a plain object
+    // --- QR CODE GENERATION ---
+    const EmailOrderID = order._id.toString();
+    const qrCodeDataURL = await QRCode.toDataURL(EmailOrderID);
+
+    // 3. Create HTML content for the email with QR code embedded
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <h2 style="color: #3c0052; text-align: center;">Order Status Update</h2>
+        <p>Hello ${req.user.name || 'there'},</p>
+        <p>Your order <strong>#${order.orderNumber}</strong> has been successfully updated.</p>
+        <p>The new status is: <strong>${order.status}</strong>.</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Order Details</h3>
+          <p><strong>Order ID:</strong> ${order._id}</p>
+          <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+          <p><strong>Amount Paid:</strong> ₹${order.totalPrice ? order.totalPrice.toLocaleString() : 'N/A'}</p>
+          <p><strong>Update Date:</strong> ${new Date().toLocaleDateString()}</p>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+          <h3>Your Order QR Code</h3>
+          <p>Please save this QR code for your records. You may need to show it when collecting your order.</p>
+          <img src="${qrCodeDataURL}" alt="Order QR Code" style="max-width: 200px; margin: 10px auto; display: block; border: 1px solid #ddd;" />
+        </div>
+        
+        <p style="font-size: 12px; color: #666; margin-top: 30px; text-align: center;">
+          This is an automated message. Please do not reply to this email.
+        </p>
+      </div>
+    `;
+
+    // --- SEND EMAIL AND FORGET ---
+    // Remove 'await' to not block the response.
+    // Add a .catch() to handle potential errors without crashing the app.
+    sendMail({
+      to: req.user.email,
+      subject: `Order Status Updated - #${order.orderNumber}`,
+      html: emailHtml,
+    }).catch(err => {
+      console.error('Failed to send order update email:', err);
+      // Optionally, you could implement a more robust retry or notification system here.
+    });
+
+    // Respond to the client immediately after triggering the email
     res.json(order.toObject());
+
   } catch (e) {
     next(e);
   }
 };
-
 exports.list = async (req,res,next)=>{
   try{
     const page = Math.max(1, parseInt(req.query.page||'1'));
