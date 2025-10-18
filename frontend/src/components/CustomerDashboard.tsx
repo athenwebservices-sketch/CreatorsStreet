@@ -127,11 +127,10 @@ const CustomerDashboard = () => {
           const total = Number(order.totalAmount) || Number(order.total) || 0;
           return sum + total;
         }, 0);
-
+        console.log(userOrders)
         // FIXED: Count pending and completed orders based on the API response structure
         const pendingOrders = userOrders.filter(order => 
           order.status === 'pending' || 
-          order.paymentStatus === 'pending' ||
           !order.status
         ).length;
         
