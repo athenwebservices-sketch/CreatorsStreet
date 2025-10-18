@@ -138,7 +138,7 @@ const AdminDashboard = () => {
               
               <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center">
                 <div className="text-4xl mb-2">💰</div>
-                <div className="text-3xl font-bold text-white mb-1">${stats.totalRevenue.toLocaleString()}</div>
+                <div className="text-3xl font-bold text-white mb-1">{stats.totalRevenue.toLocaleString()}</div>
                 <div className="text-gray-300">Total Revenue</div>
               </div>
               
@@ -188,7 +188,7 @@ const AdminDashboard = () => {
                             {order.status}
                           </span>
                         </td>
-                        <td className="py-3 px-4">${order.totalAmount}</td>
+                        <td className="py-3 px-4">{order.totalAmount}</td>
                         <td className="py-3 px-4">
                           {new Date(order.orderDate).toLocaleDateString()}
                         </td>

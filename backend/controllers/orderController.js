@@ -68,22 +68,36 @@ exports.updateStatusByNumber = async (req, res, next) => {
   }
 };
 
-exports.list = async (req,res,next)=>{
-  try{
-    const page = Math.max(1, parseInt(req.query.page||'1'));
-    const limit = Math.max(1, parseInt(req.query.limit||'20'));
-    const skip = (page-1)*limit;
-    if(req.user.role==='customer'){
+exports.list = async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page || '1'));
+    const limit = Math.max(1, parseInt(req.query.limit || '20'));
+    const skip = (page - 1) * limit;
+
+    // Always sort by 'createdAt' in descending order (most recent first)
+    const sortOrder = -1;  // -1 for descending order
+
+    if (req.user.role === 'customer') {
       const total = await Order.countDocuments({ userId: req.user._id });
-      const orders = await Order.find({ userId: req.user._id }).skip(skip).limit(limit);
+      const orders = await Order.find({ userId: req.user._id })
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: sortOrder });  // Sort by createdAt, descending
       res.json({ page, limit, total, orders });
     } else {
       const total = await Order.countDocuments();
-      const orders = await Order.find().skip(skip).limit(limit).populate('userId','firstName lastName email');
+      const orders = await Order.find()
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: sortOrder })  // Sort by createdAt, descending
+        .populate('userId', 'firstName lastName email');
       res.json({ page, limit, total, orders });
     }
-  }catch(e){next(e)}
+  } catch (e) {
+    next(e);
+  }
 };
+
 
 exports.get = async (req,res,next)=>{
   try{ const order = await Order.findById(req.params.id); if(!order) return res.status(404).end(); if(req.user.role==='customer' && order.userId.toString()!==req.user._id.toString()) return res.status(403).end(); res.json(order);}catch(e){next(e)}

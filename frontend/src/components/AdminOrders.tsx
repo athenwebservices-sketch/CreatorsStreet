@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
-import QRCode from 'react-qr-code'; // Added QR code import
+import QRCode from 'react-qr-code';
 
 interface Order {
   _id: string;
@@ -39,33 +39,37 @@ interface OrdersData {
   orders: Order[];
 }
 
-const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
+const AdminOrders = () => {
   const { token } = useAuth();
-  const [ordersData, setOrdersData] = useState<OrdersData>(
-    initialData || { page: 1, limit: 20, total: 0, orders: [] }
-  );
-  const [loading, setLoading] = useState(!initialData);
+  const [ordersData, setOrdersData] = useState<OrdersData>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    orders: []
+  });
+  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!initialData) {
-      fetchOrders();
-    }
-  }, [currentPage, statusFilter, searchTerm]);
-
-  const fetchOrders = async () => {
+  // Fetch orders function
+  const fetchOrders = async (page: number = 1, filters: { status?: string; search?: string } = {}) => {
     try {
       setLoading(true);
+      setError(null);
+      
       const params = new URLSearchParams({
-        page: currentPage.toString(),
+        page: page.toString(),
         limit: '20',
-        ...(statusFilter !== 'all' && { status: statusFilter }),
-        ...(searchTerm && { search: searchTerm }),
+        ...(filters.status && filters.status !== 'all' && { status: filters.status }),
+        ...(filters.search && { search: filters.search }),
       });
+
+      console.log('Fetching orders with params:', params.toString());
+      console.log('Current page:', page);
 
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/orders?${params}`,
@@ -77,13 +81,45 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
         }
       );
 
+      console.log('API Response:', response.data);
+
+      // Check if response has the expected structure
+      if (!response.data || !Array.isArray(response.data.orders)) {
+        throw new Error('Invalid API response structure');
+      }
+
       setOrdersData(response.data);
+      setCurrentPage(page);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      setError('Failed to fetch orders. Please try again.');
+      setOrdersData({ page: 1, limit: 20, total: 0, orders: [] });
     } finally {
       setLoading(false);
     }
   };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchOrders(1, { status: statusFilter, search: searchTerm });
+  }, []); // Only run once on mount
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      fetchOrders(newPage, { status: statusFilter, search: searchTerm });
+    }
+  };
+
+  // Handle filter change
+  const handleFilterChange = () => {
+    fetchOrders(1, { status: statusFilter, search: searchTerm });
+  };
+
+  // Update orders when filters change
+  useEffect(() => {
+    handleFilterChange();
+  }, [statusFilter, searchTerm]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -98,21 +134,13 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
         }
       );
       
-      // Refresh orders
-      fetchOrders();
+      // Refresh current page
+      fetchOrders(currentPage, { status: statusFilter, search: searchTerm });
       setShowDetails(false);
     } catch (error) {
       console.error('Error updating order status:', error);
     }
   };
-
-  const filteredOrders = ordersData.orders.filter(order => {
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesSearch = searchTerm === '' || 
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.userId.email.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
 
   const totalPages = Math.ceil(ordersData.total / ordersData.limit);
 
@@ -162,7 +190,7 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
               className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
             />
           </div>
-          {/* <select
+          <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-yellow-400"
@@ -173,9 +201,16 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
             <option value="shipped">Shipped</option>
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
-          </select> */}
+          </select>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-300">
+          {error}
+        </div>
+      )}
 
       {/* Orders Table */}
       <div className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden">
@@ -185,10 +220,10 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
               <tr className="text-white">
                 <th className="text-left py-3 px-4">Order Number</th>
                 <th className="text-left py-3 px-4">Customer Email</th>
-                {/* <th className="text-left py-3 px-4">Items</th> */}
+                
                 <th className="text-left py-3 px-4">Total</th>
                 <th className="text-left py-3 px-4">Status</th>
-                {/* <th className="text-left py-3 px-4">Payment</th> */}
+                
                 <th className="text-left py-3 px-4">Date</th>
                 <th className="text-left py-3 px-4">Actions</th>
               </tr>
@@ -200,14 +235,14 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
                     Loading orders...
                   </td>
                 </tr>
-              ) : filteredOrders.length === 0 ? (
+              ) : ordersData.orders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-8 text-gray-400">
                     No orders found
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
+                ordersData.orders.map((order) => (
                   <tr key={order._id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
                     <td className="py-3 px-4 text-white font-mono text-sm">
                       {order.orderNumber}
@@ -236,7 +271,7 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
                       </div>
                     </td> */}
                     <td className="py-3 px-4 text-white font-semibold">
-                      ${order.totalAmount}
+                      {order.totalAmount}
                     </td>
                     <td className="py-3 px-4">
                       {getStatusBadge(order.status)}
@@ -273,17 +308,45 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className="px-3 py-1 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
               >
                 Previous
               </button>
-              <span className="px-3 py-1 text-white">
-                Page {currentPage} of {totalPages}
-              </span>
+              
+              {/* Page numbers */}
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-yellow-400 text-black'
+                          : 'bg-white/10 hover:bg-white/20 text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
               <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className="px-3 py-1 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded transition-colors"
               >
@@ -351,16 +414,16 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
                   <div className="space-y-2">
                     {selectedOrder.items.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                          {/* <img
-                            src={item.productImage}
-                            alt={item.productName}
-                            className="w-12 h-12 rounded object-cover"
-                          /> */}
+                        <img
+                          src={item.productImage}
+                          alt={item.productName}
+                          className="w-12 h-12 rounded object-cover"
+                        />
                         <div className="flex-1">
                           <p className="text-white font-medium">{item.productName}</p>
-                          <p className="text-gray-400 text-sm">Qty: {item.quantity} × ${item.price}</p>
+                          <p className="text-gray-400 text-sm">Qty: {item.quantity} × {item.price}</p>
                         </div>
-                        <p className="text-white font-semibold">${item.quantity * item.price}</p>
+                        <p className="text-white font-semibold">{item.quantity * item.price}</p>
                       </div>
                     ))}
                   </div>
@@ -370,24 +433,24 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-gray-400">
                       <span>Subtotal</span>
-                      <span>${selectedOrder.subtotal}</span>
+                      <span>{selectedOrder.subtotal}</span>
                     </div>
                     <div className="flex justify-between text-gray-400">
                       <span>Tax</span>
-                      <span>${selectedOrder.taxAmount}</span>
+                      <span>{selectedOrder.taxAmount}</span>
                     </div>
                     <div className="flex justify-between text-gray-400">
                       <span>Shipping</span>
-                      <span>${selectedOrder.shippingCost}</span>
+                      <span>{selectedOrder.shippingCost}</span>
                     </div>
                     <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-white/10">
                       <span>Total</span>
-                      <span>${selectedOrder.totalAmount}</span>
+                      <span>{selectedOrder.totalAmount}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* <div>
+                <div>
                   <p className="text-gray-400 text-sm mb-2">Update Status</p>
                   <div className="flex gap-2">
                     {['pending', 'paid', 'shipped', 'delivered', 'cancelled'].map((status) => (
@@ -405,7 +468,7 @@ const AdminOrders = ({ initialData }: { initialData?: OrdersData }) => {
                       </button>
                     ))}
                   </div>
-                </div> */}
+                </div>
               </div>
             </div>
           </div>
