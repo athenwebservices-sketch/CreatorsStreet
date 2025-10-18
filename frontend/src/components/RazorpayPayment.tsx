@@ -103,10 +103,10 @@ const RazorpayPayment = ({
             orderId: orderData._id,
             items: JSON.stringify(cartItems),
           },
+          // === START: MODIFIED HANDLER ===
           handler: async function (response: any) {
             console.log('RazorpayPayment: Payment successful:', response);
             
-            // Prevent multiple handler calls
             if (razorpayInstance.current) {
               razorpayInstance.current.off('payment.success');
             }
@@ -116,9 +116,18 @@ const RazorpayPayment = ({
 
             try {
               const orderNumber = orderData.order_id || orderData.orderNumber || `ORD-${orderData._id}`;
+              
+              // Wrap the API call in a .catch() to prevent it from bubbling up
+              // and causing a global logout on 401 errors.
               const updatedOrder = await apiService.put(`/api/orders/by-number/${orderNumber}/status`, { 
                 status: 'paid', 
                 paymentStatus: "payment successful", 
+              }).catch(err => {
+                console.error('RazorpayPayment: Failed to update order status, but payment was successful.', err);
+                // Capture the error to show it in the UI, but don't re-throw it.
+                postPaymentError = new Error('Could not update order status. Please contact support.');
+                // Return the original order data so the flow can continue
+                return { _id: orderData._id };
               });
               
               finalOrderId = updatedOrder._id || updatedOrder.data?._id || orderData._id;
@@ -131,13 +140,23 @@ const RazorpayPayment = ({
                 amount: totalAmount,
               };
               
-              await apiService.post(`/api/payments`, paymentPayload);
-              console.log('RazorpayPayment: Payment record created');
+              // Also wrap this API call
+              await apiService.post(`/api/payments`, paymentPayload).catch(err => {
+                console.error('RazorpayPayment: Failed to create payment record, but payment was successful.', err);
+                // Set an error if one hasn't been set already
+                if (!postPaymentError) {
+                  postPaymentError = new Error('Could not save payment details. Please contact support.');
+                }
+              });
+
+              console.log('RazorpayPayment: Post-payment flow completed.');
             } catch (error) {
-              console.error('RazorpayPayment: Post-payment error:', error);
-              postPaymentError = error instanceof Error ? error : new Error('Unknown error');
+              // This is a last resort, the .catch() blocks should handle most cases.
+              console.error('RazorpayPayment: An unexpected error occurred in post-payment flow:', error);
+              postPaymentError = error instanceof Error ? error : new Error('An unknown error occurred after payment.');
             }
 
+            // IMPORTANT: Always call onSuccess to show the QR modal to the user.
             onSuccess({
               ...response,
               orderId: finalOrderId,
@@ -145,6 +164,8 @@ const RazorpayPayment = ({
               preventRedirect: true,
             });
           },
+          // === END: MODIFIED HANDLER ===
+
           modal: {
             ondismiss: function () {
               console.log('RazorpayPayment: Modal dismissed');
