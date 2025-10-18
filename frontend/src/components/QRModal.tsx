@@ -49,11 +49,11 @@ const QRModal = ({ orderId, onClose, error }: QRModalProps) => {
       `;
 
       // Use the apiService to send the email
-      await apiService.post('/api/email', {
-        to: user.email,
-        subject: `Order Confirmation - ${orderId}`,
-        html: emailHtml,
-      });
+      // await apiService.post('/api/email', {
+      //   to: user.email,
+      //   subject: `Order Confirmation - ${orderId}`,
+      //   html: emailHtml,
+      // });
       
       setEmailSent(true);
       console.log('QRModal: Confirmation email sent successfully');
