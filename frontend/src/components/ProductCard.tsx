@@ -36,7 +36,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [postPaymentError, setPostPaymentError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  console.log("test")
+
   // Show notification helper
   const showNotificationMessage = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setNotificationMessage(message);
@@ -278,9 +278,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <div className="text-center mb-4">
               <p className="text-green-600 font-medium mb-2">Your payment has been processed successfully.</p>
               <p className="text-gray-600 text-sm mb-4">Please save this QR code for your records.</p>
-              <div className="bg-green-100 text-green-700 px-3 py-2 rounded-md inline-block mb-2">
-                  <p className="text-sm">QR code has been sent to your email</p>
-                </div>
             </div>
             
             <div className="flex flex-col items-center">
