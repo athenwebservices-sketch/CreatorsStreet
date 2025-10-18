@@ -29,6 +29,7 @@ const CustomerProducts = () => {
   const [showCart, setShowCart] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showLoadingAfterPayment, setShowLoadingAfterPayment] = useState(false);
   const [orderId, setOrderId] = useState<string>('');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -216,13 +217,26 @@ const CustomerProducts = () => {
     clearCart();
     setShowPayment(false);
     setShowCart(false);
-    setShowQRModal(true);
+    // Show loading state instead of QR modal immediately
+    setShowLoadingAfterPayment(true);
     
     // Reset flags after a delay
     setTimeout(() => {
       paymentInitiated.current = false;
     }, 1000);
   }, [clearCart]);
+
+  // Show QR modal after loading
+  useEffect(() => {
+    if (showLoadingAfterPayment) {
+      const timer = setTimeout(() => {
+        setShowLoadingAfterPayment(false);
+        setShowQRModal(true);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showLoadingAfterPayment]);
 
   // Payment failure handler
   const handlePaymentFailure = useCallback((error: any) => {
@@ -464,14 +478,27 @@ const CustomerProducts = () => {
         />
       )}
 
+      {/* Loading State After Payment */}
+      {showLoadingAfterPayment && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-[#3c0052] rounded-xl p-8 max-w-md w-full mx-4 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Processing Your Order</h2>
+            <p className="text-gray-300">Please wait while we confirm your payment and generate your ticket...</p>
+          </div>
+        </div>
+      )}
+
       {/* QR Modal */}
-      {/* {showQRModal && (
+      {showQRModal && (
         <QRModal 
           orderId={orderId} 
           onClose={handleCloseQRModal} 
           error={paymentError}
         />
-      )} */}
+      )}
     </div>
   );
 };
