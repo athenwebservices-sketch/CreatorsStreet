@@ -39,20 +39,27 @@ interface OrdersData {
   orders: Order[];
 }
 
-const AdminOrders = () => {
+// Add initialData prop to the component
+interface AdminOrdersProps {
+  initialData?: OrdersData;
+}
+
+const AdminOrders: React.FC<AdminOrdersProps> = ({ initialData }) => {
   const { token } = useAuth();
-  const [ordersData, setOrdersData] = useState<OrdersData>({
-    page: 1,
-    limit: 20,
-    total: 0,
-    orders: []
-  });
-  const [loading, setLoading] = useState(true);
+  const [ordersData, setOrdersData] = useState<OrdersData>(
+    initialData || {
+      page: 1,
+      limit: 20,
+      total: 0,
+      orders: []
+    }
+  );
+  const [loading, setLoading] = useState(!initialData); // Set loading to false if initialData is provided
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialData?.page || 1);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch orders function
@@ -99,9 +106,11 @@ const AdminOrders = () => {
     }
   };
 
-  // Initial fetch
+  // Initial fetch - only if no initialData is provided
   useEffect(() => {
-    fetchOrders(1, { status: statusFilter, search: searchTerm });
+    if (!initialData) {
+      fetchOrders(1, { status: statusFilter, search: searchTerm });
+    }
   }, []); // Only run once on mount
 
   // Handle page change
@@ -118,6 +127,7 @@ const AdminOrders = () => {
 
   // Update orders when filters change
   useEffect(() => {
+    if (initialData) return; // Don't refetch if we have initial data
     handleFilterChange();
   }, [statusFilter, searchTerm]);
 

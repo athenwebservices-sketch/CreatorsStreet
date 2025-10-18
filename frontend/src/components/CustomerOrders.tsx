@@ -1,4 +1,4 @@
-// components/CustomerOrders.tsx (Updated)
+// components/CustomerOrders.tsx (Enhanced)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,7 +7,7 @@ import { apiService } from '@/lib/api';
 import QRCode from 'react-qr-code';
 
 interface Order {
-  _id: string; // Added _id field
+  _id: string;
   orderNumber: string;
   orderDate: string;
   paymentStatus: string;
@@ -33,7 +33,9 @@ const CustomerOrders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const { user, token } = useAuth();
 
   const fetchOrders = async (page = 1) => {
@@ -58,7 +60,7 @@ const CustomerOrders = () => {
       // Use mock data as fallback with updated structure
       const mockOrders: Order[] = [
         { 
-          _id: '68f1f7975e48f039d902b5b2', // Added _id to mock data
+          _id: '68f1f7975e48f039d902b5b2',
           orderNumber: 'ORD-1760691171458-G352', 
           orderDate: '2025-10-17T08:52:51.459Z',
           paymentStatus: 'pending',
@@ -69,19 +71,59 @@ const CustomerOrders = () => {
           totalAmount: 899,
           userId: '68f1f7975e48f039d902b5b2',
           items: [
-            { name: 'Creators Street T-Shirt', quantity: 2, price: 599 },
-            { name: 'Creators Street Cap', quantity: 1, price: 399 }
+            { 
+              productId: 'prod1',
+              name: 'Creators Street T-Shirt', 
+              quantity: 2, 
+              price: 599,
+              image: '/images/tshirt.jpg'
+            },
+            { 
+              productId: 'prod2',
+              name: 'Creators Street Cap', 
+              quantity: 1, 
+              price: 399,
+              image: '/images/cap.jpg'
+            }
           ],
           shippingAddress: {
             name: 'John Doe',
             street: '123 Main St',
             city: 'Hyderabad',
             state: 'Telangana',
-            pincode: '500001'
+            pincode: '500001',
+            phone: '9876543210'
           }
         },
-        
-        
+        { 
+          _id: '68f1f7975e48f039d902b5b3',
+          orderNumber: 'ORD-1760691171459-G353', 
+          orderDate: '2025-09-15T14:30:21.123Z',
+          paymentStatus: 'paid',
+          shippingCost: 50,
+          status: 'delivered',
+          subtotal: 1299,
+          taxAmount: 130,
+          totalAmount: 1479,
+          userId: '68f1f7975e48f039d902b5b2',
+          items: [
+            { 
+              productId: 'prod3',
+              name: 'Creators Hoodie', 
+              quantity: 1, 
+              price: 1299,
+              image: '/images/hoodie.jpg'
+            }
+          ],
+          shippingAddress: {
+            name: 'John Doe',
+            street: '123 Main St',
+            city: 'Hyderabad',
+            state: 'Telangana',
+            pincode: '500001',
+            phone: '9876543210'
+          }
+        },
       ];
       setOrders(mockOrders);
       setPagination({ page: 1, limit: 10, total: mockOrders.length });
@@ -104,7 +146,6 @@ const CustomerOrders = () => {
   };
 
   const openQrModal = (orderId: string) => {
-    
     setSelectedOrderId(orderId);
     setQrModalOpen(true);
   };
@@ -112,6 +153,16 @@ const CustomerOrders = () => {
   const closeQrModal = () => {
     setQrModalOpen(false);
     setSelectedOrderId(null);
+  };
+
+  const openDetailsModal = (order: Order) => {
+    setSelectedOrder(order);
+    setDetailsModalOpen(true);
+  };
+
+  const closeDetailsModal = () => {
+    setDetailsModalOpen(false);
+    setSelectedOrder(null);
   };
 
   const downloadQRCode = () => {
@@ -144,8 +195,10 @@ const CustomerOrders = () => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'completed':
+      case 'delivered':
         return 'bg-green-500/20 text-green-300';
       case 'processing':
+      case 'shipped':
         return 'bg-blue-500/20 text-blue-300';
       case 'pending':
         return 'bg-yellow-500/20 text-yellow-300';
@@ -216,7 +269,7 @@ const CustomerOrders = () => {
                       <th className="text-left py-3 px-4 text-white font-semibold">Items</th>
                       <th className="text-left py-3 px-4 text-white font-semibold">Total</th>
                       <th className="text-left py-3 px-4 text-white font-semibold">Status</th>
-                      <th className="text-left py-3 px-4 text-white font-semibold">QR Code</th>
+                      <th className="text-left py-3 px-4 text-white font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -238,16 +291,22 @@ const CustomerOrders = () => {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          {order.status.toLowerCase() === 'paid' ? (
+                          <div className="flex gap-2">
                             <button
-                              onClick={() => openQrModal(order._id)} // Changed from orderNumber to _id
-                              className="px-3 py-1 bg-yellow-400 text-black rounded text-sm font-medium hover:bg-yellow-300 transition-colors"
+                              onClick={() => openDetailsModal(order)}
+                              className="px-3 py-1 bg-blue-500 text-white rounded text-sm font-medium hover:bg-blue-600 transition-colors"
                             >
-                              View QR
+                              Details
                             </button>
-                          ) : (
-                            <span className="text-gray-400 text-sm">N/A</span>
-                          )}
+                            {order.status.toLowerCase() === 'paid' && (
+                              <button
+                                onClick={() => openQrModal(order._id)}
+                                className="px-3 py-1 bg-yellow-400 text-black rounded text-sm font-medium hover:bg-yellow-300 transition-colors"
+                              >
+                                QR
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -327,6 +386,139 @@ const CustomerOrders = () => {
               >
                 Download QR Code
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Order Details Modal */}
+      {detailsModalOpen && selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#3c0052] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="text-xl font-bold text-white">Order Details</h3>
+                <button
+                  onClick={closeDetailsModal}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-gray-400 text-sm">Order Number</p>
+                    <p className="text-white font-mono">{selectedOrder.orderNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Order Date</p>
+                    <p className="text-white">{formatDate(selectedOrder.orderDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Payment Status</p>
+                    <div className="mt-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPaymentStatusColor(selectedOrder.paymentStatus)}`}>
+                        {selectedOrder.paymentStatus}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-sm">Order Status</p>
+                    <div className="mt-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedOrder.status)}`}>
+                        {selectedOrder.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shipping Address */}
+                {selectedOrder.shippingAddress && (
+                  <div>
+                    <p className="text-gray-400 text-sm mb-2">Shipping Address</p>
+                    <div className="bg-white/10 rounded-lg p-3">
+                      <p className="text-white font-medium">{selectedOrder.shippingAddress.name}</p>
+                      <p className="text-gray-300 text-sm">{selectedOrder.shippingAddress.street}</p>
+                      <p className="text-gray-300 text-sm">
+                        {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} - {selectedOrder.shippingAddress.pincode}
+                      </p>
+                      <p className="text-gray-300 text-sm">Phone: {selectedOrder.shippingAddress.phone}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Order Items */}
+                <div>
+                  <p className="text-gray-400 text-sm mb-2">Order Items</p>
+                  <div className="space-y-2">
+                    {selectedOrder.items && selectedOrder.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                        <img
+                          src={item.image || '/images/placeholder.jpg'}
+                          alt={item.name}
+                          className="w-12 h-12 rounded object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="text-white font-medium">{item.name}</p>
+                          <p className="text-gray-400 text-sm">Qty: {item.quantity} × ₹{item.price}</p>
+                        </div>
+                        <p className="text-white font-semibold">₹{item.quantity * item.price}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Order Summary */}
+                <div className="border-t border-white/10 pt-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-gray-400">
+                      <span>Subtotal</span>
+                      <span>₹{selectedOrder.subtotal}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-400">
+                      <span>Tax</span>
+                      <span>₹{selectedOrder.taxAmount}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-400">
+                      <span>Shipping</span>
+                      <span>₹{selectedOrder.shippingCost}</span>
+                    </div>
+                    <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-white/10">
+                      <span>Total</span>
+                      <span>₹{selectedOrder.totalAmount}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-4">
+                  {selectedOrder.status.toLowerCase() === 'paid' && (
+                    <button
+                      onClick={() => {
+                        closeDetailsModal();
+                        openQrModal(selectedOrder._id);
+                      }}
+                      className="w-full px-4 py-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-colors font-medium"
+                    >
+                      View QR Code
+                    </button>
+                  )}
+                  {selectedOrder.status.toLowerCase() === 'delivered' && (
+                    <button className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                      Request Return
+                    </button>
+                  )}
+                  {selectedOrder.status.toLowerCase() === 'cancelled' && (
+                    <button className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg opacity-50 cursor-not-allowed font-medium">
+                      Order Cancelled
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

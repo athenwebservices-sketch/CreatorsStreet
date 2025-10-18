@@ -1,92 +1,109 @@
 // components/CustomerProducts.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/lib/api';
-import ProductCard from './ProductCard';
-import { debounce } from 'lodash'; // or implement your own debounce function
+import { debounce } from 'lodash';
+import QRModal from './QRModal';
+import RazorpayPayment from './RazorpayPayment';
+import { FaTicketAlt, FaStar, FaClock, FaShoppingCart, FaTrash, FaMinus, FaPlus } from 'react-icons/fa';
 
 interface Product {
   _id: string;
   name: string;
   price: number;
-  stock: number;
   category?: string;
   description?: string;
   image?: string;
   createdAt: string;
 }
 
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
+interface CartItem extends Product {
+  quantity: number;
 }
 
 const CustomerProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 12, total: 0 });
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [showCart, setShowCart] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [orderId, setOrderId] = useState<string>('');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const { token } = useAuth();
   
-  // Memoize categories to avoid recreation on every render
+  // Refs to prevent duplicate calls
+  const paymentInitiated = useRef(false);
+  const qrModalShown = useRef(false);
+  
+  // Memoize categories
   const categories = useMemo(() => 
     ['all', 'Apparel', 'Accessories', 'Tickets', 'Electronics', 'Collectibles'], 
     []
   );
 
-  // Debounced search function to avoid excessive API calls
-  const debouncedSearch = useCallback(
-    debounce((searchValue: string) => {
-      setSearchTerm(searchValue);
+  // Calculate cart totals
+  const cartTotal = useMemo(() => {
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  }, [cart]);
+
+  const cartItemsCount = useMemo(() => {
+    return cart.reduce((count, item) => count + item.quantity, 0);
+  }, [cart]);
+
+  // Check product cart info
+  const getProductCartInfo = useCallback((productId: string) => {
+    const cartItem = cart.find(item => item._id === productId);
+    return {
+      isInCart: !!cartItem,
+      quantity: cartItem?.quantity || 0
+    };
+  }, [cart]);
+
+  // Debounced search
+  const debouncedSearch = useMemo(
+    () => debounce((value: string) => {
+      setSearchTerm(value);
     }, 300),
     []
   );
 
-  const fetchProducts = async (page = 1) => {
+  // Fetch products
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      let url = `/api/products?page=${page}&limit=${pagination.limit}`;
+      let url = `/api/products?limit=20`;
       
-      // Add category filter if selected
       if (selectedCategory !== 'all') {
         url += `&category=${selectedCategory}`;
       }
       
-      // Add search term if provided
       if (searchTerm) {
         url += `&search=${searchTerm}`;
       }
       
       const response = await apiService.get(`${url}&Authorization=Bearer ${token}`);
-      console.log(token)
       
-      // Handle different response formats
       const productsData = response.products || response.data || response;
       const newProducts = Array.isArray(productsData) ? productsData : [];
       
       setProducts(newProducts);
-      setPagination({
-        page: response.page || page,
-        limit: response.limit || pagination.limit,
-        total: response.total || newProducts.length,
-      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch products');
-      // Use mock data as fallback
+      // Mock data fallback
       const mockProducts: Product[] = [
         { 
           _id: 'PRD001', 
           name: 'Creators Street T-Shirt', 
           price: 599, 
-          stock: 50, 
           category: 'Apparel', 
-          description: 'Premium quality t-shirt with Creators Street logo. Made from 100% cotton.',
+          description: 'Premium quality t-shirt with exclusive design',
           image: '/products/tshirt.jpg',
           createdAt: '2023-11-15T10:00:00Z' 
         },
@@ -94,117 +111,155 @@ const CustomerProducts = () => {
           _id: 'PRD002', 
           name: 'Gaming Mouse Pad', 
           price: 299, 
-          stock: 75, 
           category: 'Accessories', 
-          description: 'Large gaming mouse pad with smooth surface and non-slip base.',
+          description: 'Large gaming mouse pad with smooth surface',
           image: '/products/mousepad.jpg',
           createdAt: '2023-11-14T15:30:00Z' 
         },
         { 
           _id: 'PRD003', 
-          name: 'Creators Street Hoodie', 
+          name: 'Creators Hoodie', 
           price: 999, 
-          stock: 30, 
           category: 'Apparel', 
-          description: 'Comfortable hoodie with front pocket and adjustable hood.',
+          description: 'Comfortable hoodie with embroidered logo',
           image: '/products/hoodie.jpg',
           createdAt: '2023-11-13T09:15:00Z' 
         },
         { 
           _id: 'PRD004', 
-          name: 'Event Pass - VIP', 
-          price: 2499, 
-          stock: 100, 
-          category: 'Tickets', 
-          description: 'VIP pass for Creators Street event with exclusive access and perks.',
-          image: '/products/vip-pass.jpg',
+          name: 'Wireless Earbuds', 
+          price: 1499, 
+          category: 'Electronics', 
+          description: 'High-quality wireless earbuds with noise cancellation',
+          image: '/products/earbuds.jpg',
           createdAt: '2023-11-12T14:20:00Z' 
         },
         { 
           _id: 'PRD005', 
-          name: 'Event Pass - General', 
-          price: 999, 
-          stock: 200, 
-          category: 'Tickets', 
-          description: 'General admission pass for Creators Street event.',
-          image: '/products/general-pass.jpg',
+          name: 'Collectible Figure', 
+          price: 799, 
+          category: 'Collectibles', 
+          description: 'Limited edition collectible figure',
+          image: '/products/figure.jpg',
           createdAt: '2023-11-11T11:45:00Z' 
-        },
-        { 
-          _id: 'PRD006', 
-          name: 'Creators Street Cap', 
-          price: 399, 
-          stock: 60, 
-          category: 'Accessories', 
-          description: 'Stylish cap with embroidered Creators Street logo.',
-          image: '/products/cap.jpg',
-          createdAt: '2023-11-10T16:30:00Z' 
         },
       ];
       setProducts(mockProducts);
-      setPagination({ page: 1, limit: pagination.limit, total: mockProducts.length });
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchProducts(1);
   }, [selectedCategory, searchTerm, token]);
 
-  const handleNextPage = () => {
-    const totalPages = Math.ceil(pagination.total / pagination.limit);
-    if (pagination.page < totalPages) fetchProducts(pagination.page + 1);
-  };
+  // Initial fetch
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
-  const handlePreviousPage = () => {
-    if (pagination.page > 1) fetchProducts(pagination.page - 1);
-  };
+  // Cart functions
+  const addToCart = useCallback((product: Product, quantity: number) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item._id === product._id);
+      
+      if (existingItem) {
+        return prevCart.map(item => 
+          item._id === product._id 
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      } else {
+        return [...prevCart, { ...product, quantity }];
+      }
+    });
+  }, []);
 
-  const handlePageChange = (page: number) => {
-    fetchProducts(page);
-  };
+  const removeFromCart = useCallback((productId: string) => {
+    setCart(prevCart => prevCart.filter(item => item._id !== productId));
+  }, []);
 
-  const handleCategoryChange = (category: string) => {
+  const updateQuantity = useCallback((productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    
+    setCart(prevCart => 
+      prevCart.map(item => 
+        item._id === productId 
+          ? { ...item, quantity }
+          : item
+      )
+    );
+  }, [removeFromCart]);
+
+  const clearCart = useCallback(() => {
+    setCart([]);
+  }, []);
+
+  // Checkout
+  const handleCheckout = useCallback(() => {
+    if (cart.length === 0 || paymentInitiated.current) return;
+    
+    paymentInitiated.current = true;
+    setShowPayment(true);
+  }, [cart.length]);
+
+  // Payment success handler
+  const handlePaymentSuccess = useCallback((response: any) => {
+    console.log('CustomerProducts: Payment success', response);
+    
+    // Prevent multiple calls
+    if (qrModalShown.current) return;
+    qrModalShown.current = true;
+    
+    setOrderId(response.orderId);
+    setPaymentError(response.postPaymentError?.message || null);
+    clearCart();
+    setShowPayment(false);
+    setShowCart(false);
+    setShowQRModal(true);
+    
+    // Reset flags after a delay
+    setTimeout(() => {
+      paymentInitiated.current = false;
+    }, 1000);
+  }, [clearCart]);
+
+  // Payment failure handler
+  const handlePaymentFailure = useCallback((error: any) => {
+    console.error('CustomerProducts: Payment failed', error);
+    setShowPayment(false);
+    paymentInitiated.current = false;
+  }, []);
+
+  // Payment dismiss handler
+  const handlePaymentDismiss = useCallback(() => {
+    setShowPayment(false);
+    paymentInitiated.current = false;
+  }, []);
+
+  // Close QR modal
+  const handleCloseQRModal = useCallback(() => {
+    setShowQRModal(false);
+    setOrderId('');
+    setPaymentError(null);
+    qrModalShown.current = false;
+    window.location.href = '/customer-dashboard';
+  }, []);
+
+  // Category and search handlers
+  const handleCategoryChange = useCallback((category: string) => {
     setSelectedCategory(category);
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when changing category
-  };
+  }, []);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     debouncedSearch(e.target.value);
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when searching
-  };
+  }, [debouncedSearch]);
 
-  // Generate page numbers for pagination
-  const pageNumbers: (string | number)[] = useMemo(() => {
-  const totalPages = Math.ceil(pagination.total / pagination.limit);
-  const currentPage = pagination.page;
-  const maxVisiblePages = 5;
-  
-  if (totalPages <= maxVisiblePages) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-  
-  const pages: (string | number)[] = []; // Explicitly define the type here
-  const startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-  const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-  
-  if (startPage > 1) {
-    pages.push(1);
-    if (startPage > 2) pages.push('...');
-  }
-  
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-  
-  if (endPage < totalPages) {
-    if (endPage < totalPages - 1) pages.push('...');
-    pages.push(totalPages);
-  }
-  
-  return pages;
-}, [pagination.page, pagination.total, pagination.limit]);
+  // Function to determine badge based on category or creation date
+  const getBadge = (product: Product) => {
+    if (new Date(product.createdAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000) return 'New';
+    return null;
+  };
 
   if (loading) {
     return (
@@ -227,98 +282,196 @@ const CustomerProducts = () => {
   return (
     <div className="min-h-screen bg-[#3c0052] py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-6">Shop Products</h1>
+        <div className="mb-8 flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-white">Shop Tickets</h1>
           
-          {/* Search and Filter 
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search products..."
-                onChange={handleSearchChange}
-                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                aria-label="Search products"
-              />
-            </div>
-            
-            <div className="flex gap-2 flex-wrap" role="group" aria-label="Product categories">
-              {categories.map((category) => (
+          <button
+            onClick={() => setShowCart(!showCart)}
+            className="relative px-4 py-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-colors font-medium"
+          >
+            <span className="flex items-center">
+              <FaShoppingCart className="w-5 h-5 mr-2" />
+              Cart ({cartItemsCount})
+            </span>
+            {cartItemsCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
+                {cartItemsCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Cart Sidebar */}
+        {showCart && (
+          <div className="fixed right-0 top-0 h-full w-80 bg-black/95 backdrop-blur-md z-50 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-white">Your Cart</h2>
                 <button
-                  key={category}
-                  onClick={() => handleCategoryChange(category)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    selectedCategory === category
-                      ? 'bg-yellow-400 text-black'
-                      : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-                  aria-pressed={selectedCategory === category}
+                  onClick={() => setShowCart(false)}
+                  className="text-white hover:text-yellow-400"
                 >
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
-              ))}
+              </div>
+              
+              {cart.length === 0 ? (
+                <p className="text-gray-300 text-center py-8">Your cart is empty</p>
+              ) : (
+                <>
+                  <div className="space-y-4 mb-6">
+                    {cart.map((item) => (
+                      <div key={item._id} className="bg-white/10 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-white font-medium">{item.name}</h3>
+                          <button
+                            onClick={() => removeFromCart(item._id)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <FaTrash className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <button
+                              onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                              className="text-white hover:text-yellow-400 mr-2"
+                            >
+                              <FaMinus className="w-4 h-4" />
+                            </button>
+                            <span className="text-white mx-2">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                              className="text-white hover:text-yellow-400 ml-2"
+                            >
+                              <FaPlus className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="text-white font-medium">
+                            ₹{(item.price * item.quantity).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="border-t border-white/20 pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-white text-lg">Total:</span>
+                      <span className="text-yellow-400 text-xl font-bold">₹{cartTotal.toLocaleString()}</span>
+                    </div>
+                    
+                    <button
+                      onClick={handleCheckout}
+                      disabled={paymentInitiated.current}
+                      className="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-semibold rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {paymentInitiated.current ? 'Processing...' : 'Checkout'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </div> */}
+        )}
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8" role="list">
-          {products.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {products.map(product => {
+            const { isInCart, quantity } = getProductCartInfo(product._id);
+            return (
+              <div key={product._id} className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden border border-white/10 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105">
+                {/* Card Header with Icon and Badge */}
+                <div className="relative p-6 bg-gradient-to-br from-purple-900/30 to-yellow-900/30">
+                  <div className="flex justify-between items-start">
+                    <div className="bg-yellow-400/20 p-3 rounded-lg">
+                      <FaTicketAlt className="text-yellow-400 text-2xl" />
+                    </div>
+                    {getBadge(product) && (
+                      <div className="bg-yellow-400 text-black text-xs font-bold px-3 py-1 rounded-full">
+                        {getBadge(product)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Product Details */}
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-white mb-3">{product.name}</h3>
+                  <p className="text-gray-300 mb-5 text-sm">{product.description}</p>
+                  
+                  {/* Additional Info */}
+                  <div className="flex items-center mb-4 text-sm text-gray-300">
+                    <FaClock className="mr-2 text-yellow-400" />
+                    <span>Category: {product.category}</span>
+                  </div>
+                  
+                  {/* Price */}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="text-2xl font-bold text-yellow-400">₹{product.price}</div>
+                  </div>
+                  
+                  {/* Add to Cart Button */}
+                  {isInCart ? (
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => updateQuantity(product._id, quantity - 1)}
+                        className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-colors"
+                      >
+                        <FaMinus className="w-4 h-4" />
+                      </button>
+                      <span className="text-white font-medium">{quantity} in cart</span>
+                      <button
+                        onClick={() => updateQuantity(product._id, quantity + 1)}
+                        className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-colors"
+                      >
+                        <FaPlus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => addToCart(product, 1)}
+                      className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-3 px-4 rounded-lg transition-colors duration-300 transform hover:scale-105"
+                    >
+                      Add to Cart
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* No Products Message */}
         {products.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-300 text-xl mb-4">No products found</div>
-            <p className="text-gray-400">Try adjusting your search or filter criteria</p>
-          </div>
-        )}
-
-        {/* Enhanced Pagination */}
-        {products.length > 0 && (
-          <div className="flex items-center justify-center gap-2 flex-wrap" role="navigation" aria-label="Pagination">
-            <button
-              onClick={handlePreviousPage}
-              disabled={pagination.page === 1}
-              className="px-4 py-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Previous page"
-            >
-              Previous
-            </button>
-            
-            {pageNumbers.map((page, index) => (
-              page === '...' ? (
-                <span key={`ellipsis-${index}`} className="px-2 text-white">...</span>
-              ) : (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page as number)}
-                  className={`px-3 py-2 rounded-lg transition-colors ${
-                    pagination.page === page
-                      ? 'bg-yellow-400 text-black'
-                      : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-                  aria-label={`Page ${page}`}
-                  aria-current={pagination.page === page ? 'page' : undefined}
-                >
-                  {page}
-                </button>
-              )
-            ))}
-            
-            <button
-              onClick={handleNextPage}
-              disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
-              className="px-4 py-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label="Next page"
-            >
-              Next
-            </button>
+            <p className="text-gray-400">Please try again later</p>
           </div>
         )}
       </div>
+
+      {/* Razorpay Payment Component */}
+      {showPayment && (
+        <RazorpayPayment
+          cartItems={cart}
+          totalAmount={cartTotal}
+          onSuccess={handlePaymentSuccess}
+          onFailure={handlePaymentFailure}
+          onDismiss={handlePaymentDismiss}
+        />
+      )}
+
+      {/* QR Modal */}
+      {showQRModal && (
+        <QRModal 
+          orderId={orderId} 
+          onClose={handleCloseQRModal} 
+          error={paymentError}
+        />
+      )}
     </div>
   );
 };

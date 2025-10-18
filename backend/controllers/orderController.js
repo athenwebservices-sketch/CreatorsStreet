@@ -58,7 +58,7 @@ exports.updateStatusByNumber = async (req, res, next) => {
     // which statuses a customer can set (e.g., they can only set it to 'cancelled').
     // For now, this allows any status update for the owner or an admin.
     order.status = status;
-
+    order.paymentStatus= req.body.paymentStatus || order.paymentStatus
     await order.save();
 
     // Return the updated order as a plain object
