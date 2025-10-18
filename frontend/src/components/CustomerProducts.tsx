@@ -478,4 +478,5 @@ const CustomerProducts = () => {
     </div>
   );
 };
+
 export default CustomerProducts;

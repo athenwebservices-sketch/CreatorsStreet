@@ -457,11 +457,11 @@ const CustomerOrders = () => {
                   <div className="space-y-2">
                     {selectedOrder.items && selectedOrder.items.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                        <img
+                        {/* <img
                           src={item.image || '/images/placeholder.jpg'}
                           alt={item.name}
                           className="w-12 h-12 rounded object-cover"
-                        />
+                        /> */}
                         <div className="flex-1">
                           <p className="text-white font-medium">{item.name}</p>
                           <p className="text-gray-400 text-sm">Qty: {item.quantity} × ₹{item.price}</p>

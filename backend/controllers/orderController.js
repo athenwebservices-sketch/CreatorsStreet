@@ -109,31 +109,65 @@ exports.updateStatusByNumber = async (req, res, next) => {
   }
 };
 
+// In your orderController.js
+
 exports.list = async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page || '1'));
     const limit = Math.max(1, parseInt(req.query.limit || '20'));
     const skip = (page - 1) * limit;
+    const search = req.query.search || '';
 
     // Always sort by 'createdAt' in descending order (most recent first)
     const sortOrder = -1;  // -1 for descending order
 
-    if (req.user.role === 'customer') {
-      const total = await Order.countDocuments({ userId: req.user._id });
-      const orders = await Order.find({ userId: req.user._id })
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: sortOrder });  // Sort by createdAt, descending
-      res.json({ page, limit, total, orders });
-    } else {
-      const total = await Order.countDocuments();
-      const orders = await Order.find()
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: sortOrder })  // Sort by createdAt, descending
-        .populate('userId', 'firstName lastName email');
-      res.json({ page, limit, total, orders });
+    // Base query: for customers, only their own orders. For admins, all orders.
+    let query = req.user.role === 'customer' 
+      ? { userId: req.user._id } 
+      : {};
+
+    // If a search term is provided, add it to the query
+    if (search) {
+      query.$or = [
+        // Search by product name (case-insensitive)
+        { 'items.productName': { $regex: search, $options: 'i' } },
+        // Search by order number (case-insensitive)
+        { orderNumber: { $regex: search, $options: 'i' } }
+      ];
+
+      // If the user is an admin, also search by user email
+      if (req.user.role !== 'customer') {
+        // This requires populating the userId first, or a separate query.
+        // A more efficient way is to use a $lookup aggregation, but for simplicity,
+        // we can add the email to the $or if it's already populated.
+        // The simplest approach that works without complex aggregation is below:
+        
+        // Note: This part is slightly more complex as it requires joining data.
+        // The previous answer had a good approach. Let's refine it slightly.
+        // If you don't have a UserModel, you can omit the email search part.
+        const User = require('../models/userModel'); // Ensure this path is correct
+        const users = await User.find({ email: { $regex: search, $options: 'i' } }).select('_id');
+        const userIds = users.map(user => user._id);
+        
+        // Add search by user ID to the $or clause
+        query.$or.push({ userId: { $in: userIds } });
+      }
     }
+    
+    const total = await Order.countDocuments(query);
+    const ordersQuery = Order.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: sortOrder });
+    
+    // Only populate user data for admins
+    if (req.user.role !== 'customer') {
+      ordersQuery.populate('userId', 'firstName lastName email');
+    }
+    
+    const orders = await ordersQuery;
+    
+    res.json({ page, limit, total, orders });
   } catch (e) {
     next(e);
   }

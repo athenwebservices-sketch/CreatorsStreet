@@ -1,10 +1,11 @@
 // components/AdminOrders.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import QRCode from 'react-qr-code';
+import { debounce } from 'lodash'; // You'll need to install lodash: npm install lodash
 
 interface Order {
   _id: string;
@@ -106,6 +107,14 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ initialData }) => {
     }
   };
 
+  // Create a debounced version of the search function
+  const debouncedSearch = useCallback(
+    debounce((searchValue: string) => {
+      fetchOrders(1, { status: statusFilter, search: searchValue });
+    }, 500),
+    [statusFilter, token]
+  );
+
   // Initial fetch - only if no initialData is provided
   useEffect(() => {
     if (!initialData) {
@@ -125,11 +134,23 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ initialData }) => {
     fetchOrders(1, { status: statusFilter, search: searchTerm });
   };
 
-  // Update orders when filters change
+  // Handle search input change with debouncing
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    debouncedSearch(value);
+  };
+
+  // Handle search button click
+  const handleSearchClick = () => {
+    fetchOrders(1, { status: statusFilter, search: searchTerm });
+  };
+
+  // Update orders when status filter changes
   useEffect(() => {
     if (initialData) return; // Don't refetch if we have initial data
-    handleFilterChange();
-  }, [statusFilter, searchTerm]);
+    fetchOrders(1, { status: statusFilter, search: searchTerm });
+  }, [statusFilter]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -191,14 +212,21 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ initialData }) => {
         
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
+          <div className="flex-1 flex gap-2">
             <input
               type="text"
               placeholder="Search by order number or email..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
+              onChange={handleSearchChange}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearchClick()}
+              className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
             />
+            <button
+              onClick={handleSearchClick}
+              className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-black font-medium rounded-lg transition-colors"
+            >
+              Search
+            </button>
           </div>
           <select
             value={statusFilter}
@@ -424,11 +452,11 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ initialData }) => {
                   <div className="space-y-2">
                     {selectedOrder.items.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                        <img
+                        {/* <img
                           src={item.productImage}
                           alt={item.productName}
                           className="w-12 h-12 rounded object-cover"
-                        />
+                        /> */}
                         <div className="flex-1">
                           <p className="text-white font-medium">{item.productName}</p>
                           <p className="text-gray-400 text-sm">Qty: {item.quantity} × {item.price}</p>
@@ -460,7 +488,7 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ initialData }) => {
                   </div>
                 </div>
 
-                <div>
+                {/* <div>
                   <p className="text-gray-400 text-sm mb-2">Update Status</p>
                   <div className="flex gap-2">
                     {['pending', 'paid', 'shipped', 'delivered', 'cancelled'].map((status) => (
@@ -478,7 +506,7 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ initialData }) => {
                       </button>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

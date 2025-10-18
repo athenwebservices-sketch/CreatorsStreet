@@ -55,7 +55,7 @@ const CustomerDashboard = () => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get('tab');
-      if (tabParam && ['dashboard', 'products', 'orders'].includes(tabParam)) {
+      if (tabParam && ['dashboard', 'products', 'orders', 'help'].includes(tabParam)) {
         setActiveTab(tabParam);
       }
     }
@@ -194,6 +194,105 @@ const CustomerDashboard = () => {
         return <CustomerProducts />;
       case 'orders':
         return <CustomerOrders />;
+      case 'help':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
+              <h2 className="text-2xl font-bold text-white mb-4">Help & Support</h2>
+              <p className="text-gray-300 mb-6">Find answers to common questions and learn how to make the most of our platform.</p>
+              
+              <div className="space-y-6">
+                <div className="bg-white/5 rounded-lg p-4">
+                  <h3 className="text-xl font-semibold text-white mb-2">How to Place an Order</h3>
+                  <p className="text-gray-300 mb-3">Follow these simple steps to place an order:</p>
+                  <ol className="list-decimal list-inside text-gray-300 space-y-2">
+                    <li>Browse our products catalog and select items you wish to purchase</li>
+                    <li>Add items to your cart by clicking the "Add to Cart" button</li>
+                    <li>Review your cart and proceed to checkout</li>
+                    <li>Enter your shipping information and select a payment method</li>
+                    <li>Confirm your order and wait for the confirmation email</li>
+                  </ol>
+                </div>
+                
+                <div className="bg-white/5 rounded-lg p-4">
+                  <h3 className="text-xl font-semibold text-white mb-2">Payment Methods</h3>
+                  <p className="text-gray-300 mb-3">We accept the following payment methods:</p>
+                  <ul className="list-disc list-inside text-gray-300 space-y-2">
+                    <li>Credit/Debit Cards (Visa, Mastercard, American Express)</li>
+                    <li>Digital Wallets (PayPal, Apple Pay, Google Pay)</li>
+                    <li>Bank Transfer</li>
+                    <li>Cash on Delivery (available in select areas)</li>
+                  </ul>
+                </div>
+                
+                {/* <div className="bg-white/5 rounded-lg p-4">
+                  <h3 className="text-xl font-semibold text-white mb-2">Shipping & Delivery</h3>
+                  <p className="text-gray-300 mb-3">Information about shipping and delivery:</p>
+                  <ul className="list-disc list-inside text-gray-300 space-y-2">
+                    <li>Standard delivery: 5-7 business days</li>
+                    <li>Express delivery: 2-3 business days (additional charges apply)</li>
+                    <li>Free shipping on orders over ₹500</li>
+                    <li>Order tracking available in your account</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-white/5 rounded-lg p-4">
+                  <h3 className="text-xl font-semibold text-white mb-2">Returns & Refunds</h3>
+                  <p className="text-gray-300 mb-3">Our return and refund policy:</p>
+                  <ul className="list-disc list-inside text-gray-300 space-y-2">
+                    <li>30-day return policy from the date of delivery</li>
+                    <li>Items must be unused and in original packaging</li>
+                    <li>Refunds processed within 5-7 business days after we receive the returned item</li>
+                    <li>Shipping charges for returns are borne by the customer unless the item is defective</li>
+                  </ul>
+                </div> */}
+                
+                <div className="bg-white/5 rounded-lg p-4">
+                  <h3 className="text-xl font-semibold text-white mb-2">Contact Support</h3>
+                  <p className="text-gray-300 mb-3">Need additional help? Reach out to our support team:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
+                        <span className="text-black">📧</span>
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Email</p>
+                        <p className="text-gray-300">info@creatorsstreet.in</p>
+                      </div>
+                    </div>
+                    {/* <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
+                        <span className="text-black">📞</span>
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Phone</p>
+                        <p className="text-gray-300">+91 1234567890</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
+                        <span className="text-black">💬</span>
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Live Chat</p>
+                        <p className="text-gray-300">Available Mon-Fri, 9AM-6PM</p>
+                      </div>
+                    </div> */}
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
+                        <span className="text-black">📍</span>
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Address</p>
+                        <p className="text-gray-300">Hyderabad</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
       default:
         return (
           <div className="space-y-6">
@@ -341,25 +440,28 @@ const CustomerDashboard = () => {
       {/* Navigation Tabs */}
       <div className="bg-black/50 backdrop-blur-sm border-b border-white/10">
         <div className="container mx-auto px-4">
-          <div className="flex space-x-1">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-              { id: 'products', label: 'Products', icon: '🛍️' },
-              { id: 'orders', label: 'My Orders', icon: '📦' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 font-medium transition-colors border-b-2 ${
-                  activeTab === tab.id
-                    ? 'text-yellow-400 border-yellow-400'
-                    : 'text-gray-300 border-transparent hover:text-white hover:border-white/30'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+            <div className="flex space-x-1 min-w-max py-3">
+              {[
+                { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+                { id: 'products', label: 'Products', icon: '🛍️' },
+                { id: 'orders', label: 'My Orders', icon: '📦' },
+                { id: 'help', label: 'Help', icon: '❓' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-6 py-3 font-medium transition-colors border-b-2 whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'text-yellow-400 border-yellow-400'
+                      : 'text-gray-300 border-transparent hover:text-white hover:border-white/30'
+                  }`}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -15,6 +15,10 @@ interface Order {
   date?: string;
   totalAmount?: number;
   total?: number;
+  subtotal?: number;
+  taxAmount?: number;
+  shippingCost?: number;
+  currency?: string;
   status?: string;
   paymentStatus?: string;
   userId?: string;
@@ -23,6 +27,13 @@ interface Order {
     _id?: string;
   };
   customerId?: string;
+  items?: Array<{
+    productId?: string;
+    productName?: string;
+    productImage?: string;
+    quantity?: number;
+    price?: number;
+  }>;
 }
 
 const AdminQRReader = () => {
@@ -390,10 +401,10 @@ const AdminQRReader = () => {
         </div>
       </div>
 
-      {/* Scan Result and Order Status */}
+      {/* Scan Result Section */}
       {scanResult && (
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
-          <h3 className="text-xl font-bold text-white mb-4">Scan Result</h3>
+          <h3 className="text-xl font-bold text-white mb-4">Scanned Value</h3>
           
           {/* Error Message */}
           {error && (
@@ -402,44 +413,153 @@ const AdminQRReader = () => {
             </div>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Scanned Value */}
-            <div className="bg-black/30 rounded-lg p-4">
-              <p className="text-gray-300 mb-2">Scanned Value:</p>
-              <div className="bg-black/50 rounded p-3 break-all">
-                <p className="text-white font-mono">{scanResult}</p>
+          <div className="bg-black/30 rounded-lg p-4">
+            <div className="bg-black/50 rounded p-4 break-all">
+              <p className="text-white font-mono text-lg">{scanResult}</p>
+            </div>
+            <div className="mt-4 flex space-x-2">
+              <button
+                onClick={() => navigator.clipboard.writeText(scanResult)}
+                className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-black font-semibold rounded-lg transition-colors"
+              >
+                Copy to Clipboard
+              </button>
+              <button
+                onClick={() => {
+                  setScanResult(null);
+                  setOrderStatus(null);
+                  setOrderDetails(null);
+                }}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Order Items Section */}
+      {orderDetails && orderDetails.items && orderDetails.items.length > 0 && (
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
+          <h3 className="text-xl font-bold text-white mb-4">Order Items</h3>
+          
+          <div className="space-y-4">
+            {orderDetails.items.map((item, index) => (
+              <div key={index} className="bg-black/30 rounded-xl p-4 flex items-center space-x-4">
+                <div className="w-20 h-20 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 border border-gray-600">
+                  {item.productImage ? (
+                    <img 
+                      src={item.productImage} 
+                      alt={item.productName || 'Product'} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-1">
+                  <h4 className="text-white font-semibold text-lg mb-1">
+                    {item.productName || 'Unknown Product'}
+                  </h4>
+                  <div className="flex items-center space-x-4 text-sm">
+                    <span className="text-gray-400">
+                      Quantity: <span className="text-white font-medium">{item.quantity || 0}</span>
+                    </span>
+                    <span className="text-gray-400">
+                      Price: <span className="text-white font-medium">₹{(item.price || 0).toLocaleString()}</span>
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <p className="text-gray-400 text-sm mb-1">Total</p>
+                  <p className="text-white font-bold text-lg">
+                    ₹{((item.price || 0) * (item.quantity || 0)).toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <div className="mt-4 flex space-x-2">
-                <button
-                  onClick={() => navigator.clipboard.writeText(scanResult)}
-                  className="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-black font-semibold rounded-lg transition-colors"
-                >
-                  Copy to Clipboard
-                </button>
-                <button
-                  onClick={() => {
-                    setScanResult(null);
-                    setOrderStatus(null);
-                    setOrderDetails(null);
-                  }}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Clear
-                </button>
+            ))}
+            
+            {/* Order Summary */}
+            <div className="bg-black/30 rounded-xl p-4 mt-6">
+              <h4 className="text-white font-semibold mb-3">Order Summary</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Subtotal</span>
+                  <span className="text-white">₹{(orderDetails.subtotal || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Tax Amount</span>
+                  <span className="text-white">₹{(orderDetails.taxAmount || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Shipping Cost</span>
+                  <span className="text-white">₹{(orderDetails.shippingCost || 0).toLocaleString()}</span>
+                </div>
+                <div className="border-t border-gray-600 pt-2 mt-2">
+                  <div className="flex justify-between">
+                    <span className="text-white font-semibold">Total Amount</span>
+                    <span className="text-white font-bold text-lg">
+                      ₹{(orderDetails.totalAmount || orderDetails.total || 0).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            
-            {/* Order Status */}
+          </div>
+        </div>
+      )}
+
+      {/* Order Status Section */}
+      {orderDetails && (
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6">
+          <h3 className="text-xl font-bold text-white mb-4">Order Status</h3>
+          
+          {isLoadingStatus ? (
+            <div className="bg-black/30 rounded-lg p-8 flex items-center justify-center">
+              <div className="text-white">Loading order status...</div>
+            </div>
+          ) : orderStatus ? (
             <div className="bg-black/30 rounded-lg p-4">
-              <p className="text-gray-300 mb-2">Order Status:</p>
-              {isLoadingStatus ? (
-                <div className="bg-black/50 rounded p-3 flex items-center justify-center h-12">
-                  <div className="text-white">Loading...</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-gray-400 text-sm mb-2">Order Information</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Order ID:</span>
+                      <span className="text-white font-medium">#{orderDetails.orderNumber || orderDetails._id || orderDetails.id}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Order Date:</span>
+                      <span className="text-white font-medium">
+                        {formatDate(orderDetails.orderDate || orderDetails.createdAt || orderDetails.date)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Payment Status:</span>
+                      <span className={`font-medium ${
+                        orderDetails.paymentStatus === 'paid' 
+                          ? 'text-green-400' 
+                          : orderDetails.paymentStatus === 'pending'
+                          ? 'text-yellow-400'
+                          : 'text-red-400'
+                      }`}>
+                        {orderDetails.paymentStatus || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              ) : orderStatus ? (
-                <div className="bg-black/50 rounded p-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`px-3 py-1 rounded-full text-sm ${
+                
+                <div>
+                  <p className="text-gray-400 text-sm mb-2">Current Status</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`px-4 py-2 rounded-full text-sm font-medium ${
                       orderStatus === 'completed' || 
                       orderStatus === 'delivered' || 
                       orderStatus === 'paid' ||
@@ -453,46 +573,25 @@ const AdminQRReader = () => {
                     </span>
                   </div>
                   
-                  {orderDetails && (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Order ID:</span>
-                        <span className="text-white">#{orderDetails.orderNumber || orderDetails._id || orderDetails.id}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Date:</span>
-                        <span className="text-white">
-                          {formatDate(orderDetails.orderDate || orderDetails.createdAt || orderDetails.date)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Total:</span>
-                        <span className="text-white">₹{(orderDetails.totalAmount || orderDetails.total || 0).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="mt-4">
-                    <button
-                      onClick={updateOrderStatus}
-                      disabled={isUpdatingStatus || orderStatus === 'Already Scanned'}
-                      className={`w-full px-4 py-2 font-semibold rounded-lg transition-colors ${
-                        isUpdatingStatus || orderStatus === 'Already Scanned'
-                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                          : 'bg-green-500 hover:bg-green-600 text-white'
-                      }`}
-                    >
-                      {isUpdatingStatus ? 'Updating...' : 'Mark as Scanned'}
-                    </button>
-                  </div>
+                  <button
+                    onClick={updateOrderStatus}
+                    disabled={isUpdatingStatus || orderStatus === 'Already Scanned'}
+                    className={`w-full px-4 py-3 font-semibold rounded-lg transition-colors ${
+                      isUpdatingStatus || orderStatus === 'Already Scanned'
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : 'bg-green-500 hover:bg-green-600 text-white'
+                    }`}
+                  >
+                    {isUpdatingStatus ? 'Updating...' : 'Mark as Scanned'}
+                  </button>
                 </div>
-              ) : (
-                <div className="bg-black/50 rounded p-3 flex items-center justify-center h-12">
-                  <div className="text-gray-400">No status available</div>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-black/30 rounded-lg p-8 text-center">
+              <p className="text-gray-400">No status information available</p>
+            </div>
+          )}
         </div>
       )}
 
